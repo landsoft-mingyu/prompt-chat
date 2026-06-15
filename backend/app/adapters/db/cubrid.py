@@ -1,5 +1,4 @@
-from sqlalchemy import text
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 
 from app.adapters.db.base import IDBClient
 

@@ -1,0 +1,11 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (미사용 import, 미정의 변수 등)
+    "I",   # isort (import 순서)
+    "UP",  # pyupgrade (구버전 문법 감지)
+]

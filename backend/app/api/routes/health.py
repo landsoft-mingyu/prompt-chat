@@ -12,7 +12,11 @@ async def health_check(service: HealthService = Depends(get_health_service)):
     return await service.check_api()
 
 
-@router.get("/db", response_model=DBHealthResponse, responses={503: {"description": "DB unavailable"}})
+@router.get(
+    "/db",
+    response_model=DBHealthResponse,
+    responses={503: {"description": "DB unavailable"}},
+)
 async def db_health_check(service: HealthService = Depends(get_health_service)):
     try:
         return await service.check_db()

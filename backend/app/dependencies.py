@@ -1,7 +1,7 @@
 from fastapi import Depends, Request
 from sqlalchemy import Engine
 
-from app.adapters.db.base import IDBClient          # 추가
+from app.adapters.db.base import IDBClient  # 추가
 from app.adapters.db.cubrid import CubridClient
 from app.interfaces.health_repository import IHealthRepository
 from app.repositories.health_repository import HealthRepository
