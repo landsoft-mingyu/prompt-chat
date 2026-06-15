@@ -1,0 +1,8 @@
+# 웹 프레임워크
+fastapi
+# ASGI 서버 (standard = websockets, httptools 등 고성능 옵션 포함)
+uvicorn[standard]
+# 환경변수 → 설정 객체 자동 매핑 (pydantic v2 기반)
+pydantic-settings
+# SQLAlchemy CUBRID 방언 + pycubrid 드라이버
+sqlalchemy-cubrid[pycubrid]

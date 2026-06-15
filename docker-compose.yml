@@ -1,0 +1,32 @@
+services:
+  gateway:
+    image: nginx:1.27
+    container_name: prompt_chat_gateway
+    ports:
+      - "3001:80"
+    volumes:
+      - /data/prompt_chat/gateway/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - /data/prompt_chat/gateway/html:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+    networks:
+      - prompt_chat_net
+
+  api:
+    image: landsoftdocker/prompt-chat-api:0.1.2
+    container_name: prompt_chat_api
+    expose:
+      - "8000"
+    environment:
+      # ⚠️ 보안: .env 파일로 분리 권장
+      CUBRID_HOST: "192.168.12.55"
+      CUBRID_PORT: "33000"
+      CUBRID_DB: "royal"
+      CUBRID_USER: "royal"
+      CUBRID_PASSWORD: "royal13!#"
+    networks:
+      - prompt_chat_net
+
+networks:
+  prompt_chat_net:
+    driver: bridge
