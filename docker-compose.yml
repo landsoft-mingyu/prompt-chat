@@ -1,4 +1,23 @@
 services:
+  cubrid:
+    image: cubrid/cubrid:latest
+    container_name: prompt_chat_cubrid
+    hostname: cubrid
+    environment:
+      - CUBRID_DB=royal
+      - CUBRID_USER=royal
+      - CUBRID_PASSWORD=change-me
+    ports:
+      - "33000:33000"
+    volumes:
+      - cubrid_data:/var/lib/cubrid
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - prompt_chat_net
+    cap_add:
+      - SYS_ADMIN
+    ipc: host
+
   gateway:
     image: nginx:1.27
     container_name: prompt_chat_gateway
@@ -17,16 +36,16 @@ services:
     container_name: prompt_chat_api
     expose:
       - "8000"
-    environment:
-      # ⚠️ 보안: .env 파일로 분리 권장
-      CUBRID_HOST: "192.168.12.55"
-      CUBRID_PORT: "33000"
-      CUBRID_DB: "royal"
-      CUBRID_USER: "royal"
-      CUBRID_PASSWORD: "royal13!#"
+    env_file:
+      - .env
+    volumes:
+      - ./backend/app:/app/app
     networks:
       - prompt_chat_net
 
 networks:
   prompt_chat_net:
     driver: bridge
+
+volumes:
+  cubrid_data:

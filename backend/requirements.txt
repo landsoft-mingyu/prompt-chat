@@ -6,3 +6,5 @@ uvicorn[standard]
 pydantic-settings
 # SQLAlchemy CUBRID 방언 + pycubrid 드라이버
 sqlalchemy-cubrid[pycubrid]
+# HTTP 클라이언트 (외부 API 호출용 비동기 클라이언트)
+httpx

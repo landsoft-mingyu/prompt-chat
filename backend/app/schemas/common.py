@@ -1,14 +1,14 @@
-from enum import Enum
-from typing import Annotated, Any
+from enum import StrEnum
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 # ──────────────────────────────────────────────
 # Enum 정의 (타입 안정성)
 # ──────────────────────────────────────────────
 
 
-class CardType(str, Enum):
+class CardType(StrEnum):
     """프론트엔드 액션 카드 타입 — Enum으로 정의하여 타입 안정성 확보."""
 
     RESERVATION_SLOT = "reservation_slot"  # 예약 가능 회차
@@ -34,7 +34,6 @@ class ActionCard(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         str_strip_whitespace=True,
-        validate_assignment=True,
         json_schema_extra={
             "examples": [
                 {
@@ -59,46 +58,19 @@ class ActionCard(BaseModel):
         },
     )
 
-    type: Annotated[
-        CardType,
-        Field(description="카드 유형"),
-    ]
-    title: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description="카드 제목 (버튼 텍스트 또는 카드 헤더)",
-        ),
-    ]
-    description: Annotated[
-        str | None,
-        Field(
-            default=None,
-            description="카드 설명 (부가 정보, 선택사항)",
-        ),
-    ] = None
-    payload: Annotated[
-        dict[str, Any],
-        Field(
-            default_factory=dict,
-            description="카드 클릭 시 전달될 데이터 (action_type별로 구조가 다름)",
-        ),
-    ] = Field(default_factory=dict)
-
-    @field_validator("type", mode="before")
-    @classmethod
-    def validate_type(cls, v: Any) -> CardType:
-        """type 검증. Enum 및 문자열 모두 지원."""
-        if isinstance(v, CardType):
-            return v
-        if isinstance(v, str):
-            try:
-                return CardType(v)
-            except ValueError:
-                raise ValueError(
-                    f"type must be one of {[ct.value for ct in CardType]}, got {v!r}"
-                )
-        raise TypeError(f"type must be str or CardType, got {type(v).__name__}")
+    type: CardType = Field(description="카드 유형")
+    title: str = Field(
+        min_length=1,
+        description="카드 제목 (버튼 텍스트 또는 카드 헤더)",
+    )
+    description: str | None = Field(
+        default=None,
+        description="카드 설명 (부가 정보, 선택사항)",
+    )
+    payload: dict[str, Any] = Field(
+        default_factory=dict,
+        description="카드 클릭 시 전달될 데이터 (action_type별로 구조가 다름)",
+    )
 
 
 __all__ = [

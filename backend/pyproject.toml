@@ -9,3 +9,10 @@ select = [
     "I",   # isort (import 순서)
     "UP",  # pyupgrade (구버전 문법 감지)
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
