@@ -2,10 +2,10 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.dependencies import get_royal_api
-from app.repositories.interfaces.reservation_api_client import (
+from app.adapters.interfaces.reservation_api_client import (
     IReservationApiClient,
 )
+from app.dependencies import get_royal_api
 from app.schemas.reservation import (
     ReservationCancelRequest,
     ReservationCancelResponse,

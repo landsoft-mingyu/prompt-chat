@@ -2,13 +2,13 @@
 
 import httpx
 
+from app.adapters.interfaces.reservation_api_client import (
+    IReservationApiClient,
+)
 from app.core.config import Settings
 from app.core.exceptions import (
     DatabaseException,
     ValidationException,
-)
-from app.repositories.interfaces.reservation_api_client import (
-    IReservationApiClient,
 )
 
 

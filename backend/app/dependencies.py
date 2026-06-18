@@ -4,12 +4,12 @@ from sqlalchemy import Engine
 from app.adapters.db.base import IDBClient
 from app.adapters.db.cubrid import CubridClient
 from app.adapters.http.royal_api import RoyalApi
+from app.adapters.interfaces.reservation_api_client import (
+    IReservationApiClient,
+)
 from app.core.config import Settings, get_settings
 from app.repositories.health_repository import HealthRepository
 from app.repositories.interfaces.health_repository import IHealthRepository
-from app.repositories.interfaces.reservation_api_client import (
-    IReservationApiClient,
-)
 from app.services.health_service import HealthService
 
 
