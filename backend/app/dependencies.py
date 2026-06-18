@@ -8,7 +8,6 @@ from app.adapters.interfaces.reservation_api_client import (
     IReservationApiClient,
 )
 from app.core.config import Settings, get_settings
-from app.repositories.cubrid.reservation_repository import RoyalReservationRepository
 from app.repositories.health_repository import HealthRepository
 from app.repositories.interfaces.health_repository import IHealthRepository
 from app.services.health_service import HealthService
@@ -41,13 +40,6 @@ def get_health_service(
 ) -> HealthService:
     """HealthService 인스턴스 생성."""
     return HealthService(repository)
-
-
-def get_reservation_repository(
-    settings: Settings = Depends(get_app_settings),
-) -> RoyalReservationRepository:
-    """RoyalReservationRepository 인스턴스 생성."""
-    return RoyalReservationRepository(settings)
 
 
 def get_royal_api(
