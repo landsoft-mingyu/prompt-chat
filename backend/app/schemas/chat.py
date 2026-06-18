@@ -200,24 +200,15 @@ class ChatResponse(BaseModel):
     ]
     sources: Annotated[
         list[Source],
-        Field(
-            default_factory=list,
-            description="참조 출처 목록 (RAG 모드에서 주로 포함)",
-        ),
+        Field(description="참조 출처 목록 (RAG 모드에서 주로 포함)"),
     ] = Field(default_factory=list)
     cards: Annotated[
         list[ActionCard],
-        Field(
-            default_factory=list,
-            description="액션 카드 목록 (Action 모드에서 주로 포함)",
-        ),
+        Field(description="액션 카드 목록 (Action 모드에서 주로 포함)"),
     ] = Field(default_factory=list)
     required_slots: Annotated[
         list[str],
-        Field(
-            default_factory=list,
-            description="추가 필요 정보 목록 (Clarification 모드에서 주로 포함)",
-        ),
+        Field(description="추가 필요 정보 목록 (Clarification 모드에서 주로 포함)"),
     ] = Field(default_factory=list)
 
     @field_validator("mode", mode="before")

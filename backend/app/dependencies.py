@@ -8,9 +8,15 @@ from app.adapters.interfaces.reservation_api_client import (
     IReservationApiClient,
 )
 from app.core.config import Settings, get_settings
+from app.repositories.cubrid.reservation_repository import RoyalReservationRepository
 from app.repositories.health_repository import HealthRepository
 from app.repositories.interfaces.health_repository import IHealthRepository
+from app.repositories.interfaces.rag_search_service import IRAGSearchService
+from app.repositories.interfaces.vector_repository import VectorRepository
+from app.repositories.milvus.vector_repository import MilvusVectorRepository
 from app.services.health_service import HealthService
+from app.services.rag.embedding_client import EmbeddingClient
+from app.services.rag.rag_search_service import RAGSearchService
 
 
 def get_app_settings() -> Settings:
@@ -42,6 +48,13 @@ def get_health_service(
     return HealthService(repository)
 
 
+def get_reservation_repository(
+    settings: Settings = Depends(get_app_settings),
+) -> RoyalReservationRepository:
+    """RoyalReservationRepository 인스턴스 생성."""
+    return RoyalReservationRepository(settings)
+
+
 def get_royal_api(
     request: Request,
     settings: Settings = Depends(get_app_settings),
@@ -49,3 +62,28 @@ def get_royal_api(
     """RoyalApi 인스턴스 생성 (app.state의 싱글톤 httpx.AsyncClient 사용)."""
     client = request.app.state.royal_api_client
     return RoyalApi(client, settings)
+
+
+def get_vector_repository(
+    settings: Settings = Depends(get_app_settings),
+) -> VectorRepository:
+    """MilvusVectorRepository 인스턴스 생성."""
+    return MilvusVectorRepository(uri=settings.milvus_uri)
+
+
+def get_embedding_client(
+    settings: Settings = Depends(get_app_settings),
+) -> EmbeddingClient:
+    """EmbeddingClient 인스턴스 생성."""
+    return EmbeddingClient(base_url=settings.embedding_url)
+
+
+def get_rag_search_service(
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    embedding_client: EmbeddingClient = Depends(get_embedding_client),
+) -> IRAGSearchService:
+    """RAGSearchService 인스턴스 생성."""
+    return RAGSearchService(
+        vector_repo=vector_repo,
+        embedding_client=embedding_client,
+    )

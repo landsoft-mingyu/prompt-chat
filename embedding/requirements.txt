@@ -1,0 +1,7 @@
+# BGE-M3 임베딩(dense+sparse)
+FlagEmbedding
+# 서비스
+fastapi
+uvicorn[standard]
+# torch는 GPU 환경에 맞춰 베이스 이미지에서 제공(Dockerfile 참고).
+# 로컬에서 직접 띄울 땐: pip install torch (CUDA 버전 환경에 맞게)

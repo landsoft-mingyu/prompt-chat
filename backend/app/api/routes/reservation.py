@@ -2,15 +2,12 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.adapters.interfaces.reservation_api_client import (
-    IReservationApiClient,
-)
+from app.adapters.http.royal_api import RoyalApi
 from app.dependencies import get_royal_api
 from app.schemas.reservation import (
     ReservationCancelRequest,
     ReservationCancelResponse,
     ReservationCreateRequest,
-    ReservationCreateResponse,
 )
 
 router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"])
@@ -22,50 +19,75 @@ async def list_programs(
         ...,
         description="궁능 코드 (gbg/cdg/cgg/jms/dsg/rtm)",
     ),
-    api_client: IReservationApiClient = Depends(get_royal_api),
+    royal_api: RoyalApi = Depends(get_royal_api),
 ) -> dict:
     """예약 가능한 프로그램 목록 조회 (ROYAL API 경유)."""
-    return await api_client.get_programs(group_code)
+    return await royal_api.get_programs(group_code)
 
 
 @router.get("/parts")
 async def list_parts(
     res_idx: str = Query(..., description="예약 프로그램 ID"),
     res_part_date: str = Query(..., description="날짜 YYYY-MM-DD"),
-    api_client: IReservationApiClient = Depends(get_royal_api),
+    royal_api: RoyalApi = Depends(get_royal_api),
 ) -> dict:
     """특정 프로그램의 예약 가능 회차 목록 조회 (ROYAL API 경유)."""
-    return await api_client.get_parts(res_idx, res_part_date)
+    return await royal_api.get_parts(res_idx, res_part_date)
 
 
 @router.get("/my-reservation")
 async def get_my_reservation(
     res_no: str = Query(..., description="예약 번호"),
     res_mobile: str = Query(..., description="휴대폰 번호"),
-    api_client: IReservationApiClient = Depends(get_royal_api),
+    royal_api: RoyalApi = Depends(get_royal_api),
 ) -> dict:
     """예약 조회 (ROYAL API 경유)."""
-    reservation = await api_client.get_reservation(res_no, res_mobile)
-    if not reservation:
-        raise HTTPException(status_code=404, detail="예약을 찾을 수 없습니다")
-    return reservation
+    try:
+        reservation = await royal_api.get_reservation(res_no, res_mobile)
+        if not reservation:
+            raise HTTPException(status_code=404, detail="예약을 찾을 수 없습니다")
+        return reservation
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="예약 조회 서비스 일시적 오류")
 
 
-@router.post("/create", response_model=ReservationCreateResponse)
+@router.post("/create")
 async def create_reservation(
     req: ReservationCreateRequest,
-    api_client: IReservationApiClient = Depends(get_royal_api),
-) -> ReservationCreateResponse:
+    royal_api: RoyalApi = Depends(get_royal_api),
+):
     """예약 생성 (ROYAL API 경유)."""
-    result = await api_client.create_reservation(req.model_dump())
-    return ReservationCreateResponse(**result)
+    try:
+        result = await royal_api.create_reservation(req.model_dump())
+        # 응답에 예약 정보 포함
+        return {
+            **result,
+            "data": {
+                "resName": req.res_name,
+                "resMobile": req.res_mobile,
+                "resIdx": req.res_idx,
+                "resDate": str(req.res_date),
+                "note": "위의 정보로 /my-reservation에서 예약번호를 조회하세요",
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
-@router.post("/cancel", response_model=ReservationCancelResponse)
+@router.post("/cancel")
 async def cancel_reservation(
     req: ReservationCancelRequest,
-    api_client: IReservationApiClient = Depends(get_royal_api),
+    royal_api: RoyalApi = Depends(get_royal_api),
 ) -> ReservationCancelResponse:
     """예약 취소 (본인 확인: res_no + res_mobile, ROYAL API 경유)."""
-    result = await api_client.cancel_reservation(req.res_no, req.res_mobile)
-    return ReservationCancelResponse(**result)
+    try:
+        result = await royal_api.cancel_reservation(req.res_no, req.res_mobile)
+        return ReservationCancelResponse(**result)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="예약 취소 서비스 일시적 오류")

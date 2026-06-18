@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.common import ActionCard
 
@@ -81,10 +81,7 @@ class ActionRequest(BaseModel):
     ]
     slots: Annotated[
         dict[str, Any],
-        Field(
-            default_factory=dict,
-            description="액션 실행에 필요한 파라미터 (date, facility, time 등)",
-        ),
+        Field(description="액션 실행에 필요한 파라미터 (date, facility, time 등)"),
     ] = Field(default_factory=dict)
     session_id: Annotated[
         UUID,
@@ -104,39 +101,6 @@ class ActionRequest(BaseModel):
             description="실행 전 사용자 확인 필요 여부 (예약 생성/취소는 True)",
         ),
     ] = False
-
-    @field_validator("action_type", mode="before")
-    @classmethod
-    def validate_action_type(cls, v: Any) -> ActionType:
-        """action_type 검증. Enum 및 문자열 모두 지원."""
-        if isinstance(v, ActionType):
-            return v
-        if isinstance(v, str):
-            try:
-                return ActionType(v)
-            except ValueError:
-                raise ValueError(
-                    f"action_type must be one of "
-                    f"{[at.value for at in ActionType]}, got {v!r}"
-                )
-        raise TypeError(
-            f"action_type must be str or ActionType, got {type(v).__name__}"
-        )
-
-    @field_validator("intent", mode="before")
-    @classmethod
-    def validate_intent(cls, v: Any) -> Intent:
-        """intent 검증. Enum 및 문자열 모두 지원."""
-        if isinstance(v, Intent):
-            return v
-        if isinstance(v, str):
-            try:
-                return Intent(v)
-            except ValueError:
-                raise ValueError(
-                    f"intent must be one of {[i.value for i in Intent]}, got {v!r}"
-                )
-        raise TypeError(f"intent must be str or Intent, got {type(v).__name__}")
 
 
 # ──────────────────────────────────────────────
@@ -192,17 +156,11 @@ class ActionResult(BaseModel):
     ]
     data: Annotated[
         dict[str, Any],
-        Field(
-            default_factory=dict,
-            description="실행 결과 데이터 (API 응답값 등)",
-        ),
+        Field(description="실행 결과 데이터 (API 응답값 등)"),
     ] = Field(default_factory=dict)
     cards: Annotated[
         list[ActionCard],
-        Field(
-            default_factory=list,
-            description="프론트엔드에 표시할 액션 카드 목록",
-        ),
+        Field(description="프론트엔드에 표시할 액션 카드 목록"),
     ] = Field(default_factory=list)
 
 

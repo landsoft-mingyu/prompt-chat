@@ -16,3 +16,6 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Downloaded model cache (HuggingFace) - do not commit (multi-GB)
+embedding/models/

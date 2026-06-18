@@ -350,12 +350,12 @@ class ReservationCreateRequest(MobileValidatorMixin):
         if isinstance(v, str):
             try:
                 parsed_date = date.fromisoformat(v)
-                today = date.today()
-                if parsed_date < today:
-                    raise ValueError("예약 날짜는 오늘 이후여야 합니다")
-                return parsed_date
-            except ValueError as e:
-                raise ValueError(f"예약 날짜 형식이 잘못되었습니다: {v}") from e
+            except ValueError:
+                raise ValueError(f"예약 날짜 형식이 잘못되었습니다: {v}")
+            today = date.today()
+            if parsed_date < today:
+                raise ValueError("예약 날짜는 오늘 이후여야 합니다")
+            return parsed_date
         raise TypeError(f"res_date must be date or string, got {type(v).__name__}")
 
 

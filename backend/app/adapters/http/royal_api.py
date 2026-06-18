@@ -117,9 +117,7 @@ class RoyalApi(IReservationApiClient):
             else None,
             "resName": payload.get("res_name"),
             "resMobile": payload.get("res_mobile"),
-            "resUserCnt": str(payload.get("res_user_cnt"))
-            if payload.get("res_user_cnt")
-            else None,
+            "resUserCnt": payload.get("res_user_cnt"),
             "resPriPolicyYn": payload.get("res_pri_policy_yn"),
             "resEml": payload.get("res_eml"),
             "resGroupNm": payload.get("res_group_nm"),
@@ -131,6 +129,26 @@ class RoyalApi(IReservationApiClient):
         }
         # None 값 제외
         api_payload = {k: v for k, v in api_payload.items() if v is not None}
+
+        # 필수 파라미터 검증
+        required = [
+            "resIdx",
+            "ptIdx",
+            "groupCode",
+            "resGubun",
+            "resGroupGubun",
+            "resDate",
+            "resName",
+            "resMobile",
+            "resUserCnt",
+            "resPriPolicyYn",
+        ]
+        missing = [k for k in required if k not in api_payload]
+        if missing:
+            raise DatabaseException(
+                f"필수 파라미터 누락: {', '.join(missing)}",
+                error_code="ROYAL_API_INVALID_PARAMS",
+            )
 
         return await self._request(
             "POST",

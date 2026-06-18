@@ -5,10 +5,10 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 
 from app.api.routes.health import router as health_router
+from app.api.routes.rag import router as rag_router
 from app.api.routes.reservation import router as reservation_router
 from app.core.config import get_settings
 from app.core.exceptions import (
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     app.state.royal_api_client = httpx.AsyncClient(
         base_url=settings.royal_api_base_url,
         timeout=httpx.Timeout(settings.royal_api_timeout_sec),
-        verify=settings.royal_api_verify_ssl,
+        verify=False,
     )
 
     yield
@@ -67,6 +67,8 @@ app.add_middleware(
 @app.exception_handler(DatabaseException)
 async def database_exception_handler(_request, exc: DatabaseException):
     """DatabaseException 처리 (503 Service Unavailable)."""
+    from fastapi.responses import JSONResponse
+
     return JSONResponse(
         status_code=503,
         content={"detail": exc.message, "error_code": exc.error_code},
@@ -76,6 +78,8 @@ async def database_exception_handler(_request, exc: DatabaseException):
 @app.exception_handler(ValidationException)
 async def validation_exception_handler(_request, exc: ValidationException):
     """ValidationException 처리 (400 Bad Request)."""
+    from fastapi.responses import JSONResponse
+
     return JSONResponse(
         status_code=400,
         content={"detail": exc.message, "error_code": exc.error_code},
@@ -85,6 +89,8 @@ async def validation_exception_handler(_request, exc: ValidationException):
 @app.exception_handler(PromptChatException)
 async def prompt_chat_exception_handler(_request, exc: PromptChatException):
     """PromptChatException 처리 (500 Internal Server Error, fallback)."""
+    from fastapi.responses import JSONResponse
+
     return JSONResponse(
         status_code=500,
         content={"detail": exc.message, "error_code": exc.error_code},
@@ -93,4 +99,5 @@ async def prompt_chat_exception_handler(_request, exc: PromptChatException):
 
 # 라우터 등록
 app.include_router(health_router)
+app.include_router(rag_router)
 app.include_router(reservation_router)

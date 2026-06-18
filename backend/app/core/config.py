@@ -54,6 +54,16 @@ class Settings(BaseSettings):
         description="CORS 허용 origin 목록",
     )
 
+    # RAG (벡터 검색)
+    milvus_uri: str = Field(
+        default="http://localhost:19530",
+        description="Milvus 벡터 DB 연결 URI",
+    )
+    embedding_url: str = Field(
+        default="http://localhost:18086",
+        description="임베딩 서비스 URL",
+    )
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     @property
