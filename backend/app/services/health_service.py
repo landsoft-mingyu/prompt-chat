@@ -1,4 +1,4 @@
-from app.interfaces.health_repository import IHealthRepository
+from app.repositories.interfaces.health_repository import IHealthRepository
 from app.schemas.health import DBHealthResponse, HealthResponse
 
 

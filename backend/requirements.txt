@@ -6,5 +6,7 @@ uvicorn[standard]
 pydantic-settings
 # SQLAlchemy CUBRID 방언 + pycubrid 드라이버
 sqlalchemy-cubrid[pycubrid]
-# HTTP 클라이언트 (외부 API 호출용 비동기 클라이언트)
+# HTTP 클라이언트 (외부 API 호출용 비동기 클라이언트, 임베딩 서비스 호출 포함)
 httpx
+# 벡터 DB 클라이언트 (site_chunks 검색/적재)
+pymilvus

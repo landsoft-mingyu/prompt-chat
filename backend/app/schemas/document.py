@@ -1,7 +1,7 @@
 """RAG 파이프라인 공통 스키마."""
 
-from datetime import UTC, datetime
-from enum import StrEnum
+from datetime import datetime, timezone
+from enum import Enum
 from hashlib import md5
 from typing import Annotated, Any
 from uuid import UUID
@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # ──────────────────────────────────────────────
 
 
-class SourceType(StrEnum):
+class SourceType(str, Enum):
     """출처 타입."""
 
     NOTICE = "notice"  # cms_board
@@ -25,7 +25,7 @@ class SourceType(StrEnum):
     FAQ = "faq"  # tcb_entity
 
 
-class IndexStatus(StrEnum):
+class IndexStatus(str, Enum):
     """색인 상태."""
 
     PENDING = "pending"
@@ -200,7 +200,7 @@ class Chunk(ContentHashMixin):
             return None
         if isinstance(v, datetime):
             if v.tzinfo is None:
-                return v.replace(tzinfo=UTC)
+                return v.replace(tzinfo=timezone.utc)
             return v
         return v
 

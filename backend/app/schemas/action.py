@@ -1,6 +1,6 @@
 """액션 실행 스키마."""
 
-from enum import StrEnum
+from enum import Enum
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -13,7 +13,7 @@ from app.schemas.common import ActionCard
 # ──────────────────────────────────────────────
 
 
-class ActionType(StrEnum):
+class ActionType(str, Enum):
     """액션 유형 — Enum으로 정의하여 타입 안정성 확보."""
 
     SEARCH = "search"  # 조회
@@ -24,7 +24,7 @@ class ActionType(StrEnum):
     SUBMIT_FORM = "submit_form"  # 문의 제출
 
 
-class Intent(StrEnum):
+class Intent(str, Enum):
     """사용자 의도 — Enum으로 정의."""
 
     RESERVATION_SEARCH_AVAILABLE_SLOTS = "reservation.search_available_slots"

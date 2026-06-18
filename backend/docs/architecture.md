@@ -130,8 +130,8 @@ Testing: pytest 9.0.2
 **엔드포인트**:
 | 메서드 | 경로 | 함수명 | 역할 | 데이터 소스 |
 |--------|------|--------|------|----------|
-| GET | `/api/v1/reservations/programs` | `list_programs()` | 프로그램 목록 조회 | CUBRID |
-| GET | `/api/v1/reservations/parts` | `list_parts()` | 회차 목록 조회 (오늘 이후) | CUBRID |
+| GET | `/api/v1/reservations/programs` | `list_programs()` | 프로그램 목록 조회 | ROYAL API |
+| GET | `/api/v1/reservations/parts` | `list_parts()` | 회차 목록 조회 | ROYAL API |
 | GET | `/api/v1/reservations/my-reservation` | `get_my_reservation()` | 예약 조회 | ROYAL API |
 | POST | `/api/v1/reservations/create` | `create_reservation()` | 예약 생성 | ROYAL API |
 | POST | `/api/v1/reservations/cancel` | `cancel_reservation()` | 예약 취소 | ROYAL API |
@@ -382,21 +382,30 @@ async def list_parts(
     parts = await repo.find_available_parts(res_idx)
 ```
 
-### 4.2 RoyalApi (HTTP 어댑터)
+### 4.2 IReservationApiClient 패턴 (의존성 역전)
 
-**어댑터 정의**:
+**인터페이스 위치**:
+```
+Location: repositories/interfaces/reservation_api_client.py
+Interface: IReservationApiClient (ABC)
+  - 6개 추상 메서드 정의
+  - get_programs(), get_program_detail(), get_parts()
+  - get_reservation(), create_reservation(), cancel_reservation()
+```
+
+**구현체 위치**:
 ```
 Location: adapters/http/royal_api.py
-Class: RoyalApi
+Class: RoyalApi(IReservationApiClient)
   - ROYAL 외부 API와의 통신을 캡슐화
   - 6개 메서드로 모든 API 호출 처리
   - _request() 헬퍼로 에러 처리 통합
 ```
 
-**DI 조립**:
+**DI 조립 위치**:
 ```
 Location: dependencies.py
-def get_royal_api(request: Request, settings: Settings = Depends(get_app_settings)) -> RoyalApi:
+def get_royal_api(request: Request, settings: Settings = Depends(get_app_settings)) -> IReservationApiClient:
     return RoyalApi(
         client=request.app.state.royal_api_client,
         settings=settings
@@ -405,13 +414,13 @@ def get_royal_api(request: Request, settings: Settings = Depends(get_app_setting
 
 **사용 위치**:
 ```
-Location: api/routes/reservation.py:create_reservation()
+Location: api/routes/reservation.py
 @router.post("/api/v1/reservations/create")
 async def create_reservation(
     req: ReservationCreateRequest,
-    royal_api: RoyalApi = Depends(get_royal_api),
+    api_client: IReservationApiClient = Depends(get_royal_api),
 ):
-    result = await royal_api.create_reservation(req.model_dump())
+    result = await api_client.create_reservation(req.model_dump())
 ```
 
 ---
@@ -454,9 +463,8 @@ async def create_reservation(
 ```
 GET /api/v1/reservations/programs
   → routes/reservation.py::list_programs()
-  → ReservationRepository.find_programs()
-  → CUBRID 쿼리
-  → Response 변환
+  → IReservationApiClient.get_programs()
+  → ROYAL API 호출
   → 응답
 ```
 
@@ -688,25 +696,12 @@ except httpx.RequestError:
 
 ---
 
-## 12. 코드 품질
-
-**전체 코드 품질 점수**: 9.1/10
-
 ### 코드 특징
 - 타입 힌팅 100% (Pydantic, Type annotations)
 - 예외 처리 통합 (custom exception hierarchy)
 - DI 기반 느슨한 결합
 - 테스트 커버리지 100% (59 tests)
 - 코드 중복 제거 (RoyalApi._request() 통합)
-
----
-
-## 13. 마지막 업데이트
-
-**날짜**: 2026-06-16  
-**상태**: Production Ready (9.1/10 code quality score)  
-**최신 커밋**: `88be000` - refactor: reorder field validator after field declarations in ActionCard
-
 ---
 
 ## 부록: 전체 의존성 맵
@@ -727,7 +722,7 @@ main.py (Application Entry Point)
   │   │
   │   └── api/routes/reservation.py
   │       ├── ReservationRepository (via DI)
-  │       ├── RoyalApi (via DI)
+  │       ├── IReservationApiClient (via DI)
   │       └── Pydantic Schemas
   │
   └── Lifespan
@@ -737,7 +732,7 @@ main.py (Application Entry Point)
 dependencies.py (DI Container)
   ├── get_app_settings() → Settings
   ├── get_reservation_repository() → ReservationRepository
-  ├── get_royal_api() → RoyalApi
+  ├── get_royal_api() → IReservationApiClient
   └── get_health_service() → HealthService
 
 repositories/

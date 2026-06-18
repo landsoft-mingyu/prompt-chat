@@ -1,6 +1,6 @@
 import re
-from datetime import UTC, date, datetime
-from enum import StrEnum
+from datetime import date, datetime, timezone
+from enum import Enum
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 # ──────────────────────────────────────────────
 
 
-class ReservationStatus(StrEnum):
+class ReservationStatus(str, Enum):
     """예약 상태 코드."""
 
     CONFIRMED = "Y"  # 예약 확정
@@ -19,14 +19,14 @@ class ReservationStatus(StrEnum):
     CANCELLED = "X"  # 취소됨
 
 
-class ReservationGubun(StrEnum):
+class ReservationGubun(str, Enum):
     """예약 유형 구분."""
 
     INDIVIDUAL = "Y"  # 개인 예약
     GROUP = "N"  # 단체 예약
 
 
-class ReservationGroupGubun(StrEnum):
+class ReservationGroupGubun(str, Enum):
     """단체 구분 코드."""
 
     YOUTH = "Y"  # 청소년 단체
@@ -109,7 +109,7 @@ class ReservationPart(BaseModel):
         if isinstance(v, date):
             return v
         if isinstance(v, int | float):
-            return datetime.fromtimestamp(v / 1000, tz=UTC).date()
+            return datetime.fromtimestamp(v / 1000, tz=timezone.utc).date()
         msg = f"res_part_date must be int/float timestamp (ms), got {type(v).__name__}"
         raise ValueError(msg)
 
@@ -378,6 +378,8 @@ class ReservationCreateResponse(BaseModel):
 
     status: str = Field(alias="resReqStatus")
     message: str | None = Field(default=None, alias="resReqMsg")
+    res_no: str | None = Field(default=None, alias="resNo")
+    vw_title: str | None = Field(default=None, alias="vwTitle")
 
 
 # ──────────────────────────────────────────────

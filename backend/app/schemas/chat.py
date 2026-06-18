@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -11,7 +11,7 @@ from app.schemas.document import VALID_SOURCE_TYPES
 # ──────────────────────────────────────────────
 
 
-class ResponseMode(StrEnum):
+class ResponseMode(str, Enum):
     """AI 응답 모드 — Enum으로 정의하여 타입 안정성 확보."""
 
     RAG = "rag"  # 벡터 검색 기반 응답

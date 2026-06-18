@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # ──────────────────────────────────────────────
 
 
-class CardType(StrEnum):
+class CardType(str, Enum):
     """프론트엔드 액션 카드 타입 — Enum으로 정의하여 타입 안정성 확보."""
 
     RESERVATION_SLOT = "reservation_slot"  # 예약 가능 회차

@@ -1,32 +1,7 @@
 from functools import lru_cache
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-# ──────────────────────────────────────────────
-# LLM 설정
-# ──────────────────────────────────────────────
-
-
-class LLMConfig(BaseModel):
-    """온프레미스 LLM 연결 설정."""
-
-    llm_base_url: str = Field(
-        default="http://192.168.12.57:18081/v1",
-        description="LLM API 엔드포인트 (온프레미스 Gemma 서버)",
-    )
-    llm_model: str = Field(
-        default="google/gemma-3-12b",
-        description="사용할 LLM 모델명",
-    )
-    llm_api_key: str = Field(
-        description="LLM API 인증 키",
-    )
-    llm_timeout_sec: int = Field(
-        default=30,
-        description="LLM 요청 타임아웃 (초)",
-    )
-
 
 # ──────────────────────────────────────────────
 # FastAPI 전체 설정
@@ -56,6 +31,10 @@ class Settings(BaseSettings):
     royal_api_timeout_sec: int = Field(
         default=30, description="ROYAL API 타임아웃 (초)"
     )
+    royal_api_verify_ssl: bool | str = Field(
+        default=False,
+        description="ROYAL API SSL 검증. False=비활성, 또는 CA 번들 파일 경로 문자열",
+    )
 
     # LLM
     llm_base_url: str = Field(
@@ -83,14 +62,6 @@ class Settings(BaseSettings):
         return (
             f"cubrid+pycubrid://{self.cubrid_user}:{self.cubrid_password}"
             f"@{self.cubrid_host}:{self.cubrid_port}/{self.cubrid_db}"
-        )
-
-    @property
-    def royal_database_url(self) -> str:
-        """ROYAL 시스템 데이터베이스 URL."""
-        return (
-            f"cubrid+pycubrid://{self.royal_user}:{self.royal_password}"
-            f"@{self.royal_host}:{self.royal_port}/{self.royal_db}"
         )
 
 

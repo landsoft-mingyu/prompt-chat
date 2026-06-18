@@ -1,7 +1,7 @@
 from fastapi.concurrency import run_in_threadpool
 
 from app.adapters.db.base import IDBClient
-from app.interfaces.health_repository import IHealthRepository
+from app.repositories.interfaces.health_repository import IHealthRepository
 
 
 class HealthRepository(IHealthRepository):

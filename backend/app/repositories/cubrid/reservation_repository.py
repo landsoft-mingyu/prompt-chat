@@ -9,16 +9,9 @@ import pycubrid
 from app.core.config import Settings
 from app.repositories.interfaces.reservation_repository import ReservationRepository
 
-# 상수
-_DEFAULT_PARTS_LIMIT = 100
-_RESERVATION_STATUS_PENDING = "N"
-_RESERVATION_STATUS_CANCELLED = "X"
-
 
 class InvalidInputError(ValueError):
     """입력 데이터 검증 실패."""
-
-    pass
 
 
 class ProgramInfo(TypedDict):

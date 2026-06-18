@@ -7,9 +7,12 @@ from app.core.exceptions import (
     DatabaseException,
     ValidationException,
 )
+from app.repositories.interfaces.reservation_api_client import (
+    IReservationApiClient,
+)
 
 
-class RoyalApi:
+class RoyalApi(IReservationApiClient):
     """ROYAL 시스템 HTTP API 호출 어댑터."""
 
     def __init__(self, client: httpx.AsyncClient, settings: Settings):
