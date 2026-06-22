@@ -22,8 +22,9 @@ class ReservationStatus(str, Enum):
 class ReservationGubun(str, Enum):
     """예약 유형 구분."""
 
-    INDIVIDUAL = "Y"  # 개인 예약
-    GROUP = "N"  # 단체 예약
+    INDIVIDUAL = "Y"  # 일반예약
+    GROUP = "N"  # 선착순
+    LOTTERY = "C"  # 추첨제
 
 
 class ReservationGroupGubun(str, Enum):
@@ -105,12 +106,17 @@ class ReservationPart(BaseModel):
     @field_validator("res_part_date", mode="before")
     @classmethod
     def validate_res_part_date(cls, v: Any) -> date:
-        """timestamp ms를 date로 변환."""
+        """timestamp ms 또는 yyyy-MM-dd 문자열을 date로 변환."""
         if isinstance(v, date):
             return v
         if isinstance(v, int | float):
             return datetime.fromtimestamp(v / 1000, tz=timezone.utc).date()
-        msg = f"res_part_date must be int/float timestamp (ms), got {type(v).__name__}"
+        if isinstance(v, str):
+            try:
+                return date.fromisoformat(v)
+            except ValueError:
+                raise ValueError(f"res_part_date must be yyyy-MM-dd format, got {v!r}")
+        msg = f"res_part_date must be date/int/str, got {type(v).__name__}"
         raise ValueError(msg)
 
 
@@ -431,11 +437,10 @@ class ReservationCancelResponse(BaseModel):
 
     model_config = ConfigDict(
         extra="ignore",
-        populate_by_name=True,
     )
 
-    status: str = Field(alias="resReqStatus", default="")
-    message: str = Field(alias="resReqMsg", default="")
+    status: str = Field(default="")
+    message: str = Field(default="")
 
 
 # ──────────────────────────────────────────────

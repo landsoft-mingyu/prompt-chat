@@ -1,89 +1,291 @@
+# prompt_chat 스택
+# 외부 공개 포트: 3005 (gateway)
+# 인프라 서비스(etcd/minio/milvus/redis/embedding)는 expose만 사용
+# LLM: 외부 vLLM 서버 192.168.12.57:18081 사용 (컨테이너 없음)
+# 개발 디버깅용 포트는 주석으로만 남김
+version: "3.9"
+
+x-prompt-chat-net: &prompt-chat-net
+  networks:
+    - prompt_chat_net
+
+x-minio-env: &minio-env
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+
 services:
-  cubrid:
-    image: cubrid/cubrid:latest
-    container_name: prompt_chat_cubrid
-    hostname: cubrid
+
+  # ── etcd (Milvus 메타데이터) ──────────────────
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: prompt_chat_etcd
+    <<: *prompt-chat-net
     environment:
-      - CUBRID_DB=royal
-      - CUBRID_USER=royal
-      - CUBRID_PASSWORD=change-me
-    ports:
-      - "33000:33000"
+      ETCD_DATA_DIR: "/etcd"
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+      ETCD_ENABLE_V2: "true"
+      ETCD_LOG_LEVEL: info
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
+      ETCD_INITIAL_CLUSTER: "default=http://etcd:2380"
+      ETCD_NAME: "default"
+      ETCDCTL_API: "3"
     volumes:
-      - cubrid_data:/var/lib/cubrid
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - prompt_chat_net
-    cap_add:
-      - SYS_ADMIN
-    ipc: host
+      - prompt_chat_etcd_data:/etcd
+    restart: unless-stopped
 
-  gateway:
-    image: nginx:1.27
-    container_name: prompt_chat_gateway
-    ports:
-      - "3005:80"
+  # ── MinIO (Milvus 오브젝트 저장소) ───────────
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: prompt_chat_minio
+    <<: *prompt-chat-net
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
-      - /data/prompt_chat/gateway/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - /data/prompt_chat/gateway/html:/usr/share/nginx/html:ro
+      - prompt_chat_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── MinIO Init (버킷 초기화, 1회 실행) ────────
+  minio-init:
+    image: minio/mc:latest
+    container_name: prompt_chat_minio_init
+    <<: *prompt-chat-net
     depends_on:
-      - api
-    networks:
-      - prompt_chat_net
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    extra_hosts:
-      - "royal.landsoft.co.kr:121.131.51.108"
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *minio-env
+      MINIO_BUCKET: "prompt-chat-bucket"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set myminio http://minio:9000 "$$MINIO_ACCESS_KEY" "$$MINIO_SECRET_KEY"; do
+          echo "waiting for minio..."
+          sleep 3
+        done
+        mc mb -p myminio/"$$MINIO_BUCKET" || true
+        echo "[minio-init] bucket ensured: $$MINIO_BUCKET"
+        exit 0
+    restart: "no"
 
-  api:
-    image: landsoftdocker/prompt-chat-api:0.1.2
-    container_name: prompt_chat_api
-    ports:
-      - "8002:8000"
+  # ── Milvus standalone ─────────────────────────
+  milvus:
+    image: milvusdb/milvus:v2.4.6
+    container_name: prompt_chat_milvus
+    <<: *prompt-chat-net
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: "etcd:2379"
+      MINIO_ADDRESS: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_NAME: "prompt-chat-bucket"
+    expose:
+      - "19530"
+      - "9091"
+    # ports:
+    #   - "19530:19530"  # 개발 디버깅용
+    #   - "9091:9091"
+    volumes:
+      - prompt_chat_milvus_data:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9091/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+
+  # ── Redis ─────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: prompt_chat_redis
+    <<: *prompt-chat-net
+    command: redis-server --appendonly yes
+    expose:
+      - "6379"
+    # ports:
+    #   - "6379:6379"  # 개발 디버깅용
+    volumes:
+      - prompt_chat_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # ── BGE-M3 임베딩 서비스 (GPU) ────────────────
+  embedding:
+    image: landsoftdocker/prompt-chat-embedding:0.1.0
+    container_name: prompt_chat_embedding
+    <<: *prompt-chat-net
+
+    environment:
+      BGE_MODEL: "BAAI/bge-m3"
+      BGE_DEVICE: "${BGE_DEVICE:-cuda}"
+      BGE_USE_FP16: "${BGE_USE_FP16:-1}"
+      HF_HOME: "/models"
+
+      NVIDIA_VISIBLE_DEVICES: "${EMBEDDING_NVIDIA_VISIBLE_DEVICES:-0}"
+      CUDA_VISIBLE_DEVICES: "${EMBEDDING_CUDA_VISIBLE_DEVICES:-0}"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
     expose:
       - "8000"
+
+    # 개발 디버깅이 필요할 때만 임시로 오픈
+    # ports:
+    #   - "18086:8000"
+
+    volumes:
+      - /data/prompt_chat/embedding/models:/models
+
+    gpus: all
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)\""
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+    restart: unless-stopped
+
+  # ── FastAPI ───────────────────────────────────
+  api:
+    image: prompt-chat-api:local-form
+    container_name: prompt_chat_api
+    <<: *prompt-chat-net
+    expose:
+      - "8000"
+    ports:
+      - "8002:8000"
     env_file:
       - .env
     environment:
-      # 임베딩/벡터 서비스 (검색 시 사용)
-      - EMBEDDING_URL=http://embedding:8000
-      - MILVUS_URI=http://host.docker.internal:19530
-    volumes:
-      - ./backend/app:/app/app
-    networks:
-      - prompt_chat_net
+      # RAG / 벡터 서비스
+      EMBEDDING_URL: "http://embedding:8000"
+      MILVUS_HOST: "milvus"
+      MILVUS_PORT: "19530"
+      MILVUS_COLLECTION: "chunks"
+      REDIS_URL: "redis://redis:6379/0"
+      # LLM (외부 vLLM 서버 — compose 내 컨테이너 없음)
+      LLM_BASE_URL: "http://192.168.12.57:18081/v1"
+      LLM_MODEL: "qwen3-vl-8b"
+      # ROYAL 예약 API
+      ROYAL_API_BASE_URL: "https://royal.landsoft.co.kr/ROYAL/api/v1/res"
+      # 로컬 CUBRID (--profile dev 실행 시 hostname: cubrid)
+      CUBRID_HOST: "cubrid"
     extra_hosts:
       - "royal.landsoft.co.kr:121.131.51.108"
+    depends_on:
+      milvus:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
 
-  # BGE-M3 임베딩 서비스 (dense+sparse). 적재/검색 공통.
-  embedding:
-    build: ./embedding
-    image: prompt-chat-embedding:0.1.0
-    container_name: prompt_chat_embedding
+  # ── Nginx Gateway ─────────────────────────────
+  gateway:
+    image: prompt-chat-gateway:local
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: prompt_chat_gateway
+    <<: *prompt-chat-net
     ports:
-      - "18086:8000"
+      - "3005:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    extra_hosts:
+      - "royal.landsoft.co.kr:121.131.51.108"
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── CUBRID (로컬 개발 전용) ────────────────────
+  # 실행: docker compose --profile dev up -d cubrid
+  cubrid:
+    image: cubrid/cubrid:latest
+    container_name: prompt_chat_cubrid
+    <<: *prompt-chat-net
+    profiles:
+      - dev
+    hostname: cubrid
     environment:
-      - BGE_MODEL=BAAI/bge-m3
-      - BGE_USE_FP16=1
-      - HF_HOME=/models
+      CUBRID_DB: ${CUBRID_DB:-royal}
+      CUBRID_USER: ${CUBRID_USER:-royal}
+      CUBRID_PASSWORD: ${CUBRID_PASSWORD:-change-me}
+    ports:
+      - "33000:33000"
     volumes:
-      # 모델 캐시 영속화 (재빌드/재기동 시 재다운로드 방지)
-      - ./embedding/models:/models
-    networks:
-      - prompt_chat_net
-    # GPU 사용 (nvidia container runtime 필요)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - prompt_chat_cubrid_data:/var/lib/cubrid
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    cap_add:
+      - SYS_ADMIN
+    ipc: host
+    restart: unless-stopped
+
+volumes:
+  prompt_chat_embedding_models:
+    external: true
+    name: prompt_chat_embedding_models
+  prompt_chat_redis_data:
+    external: true
+    name: prompt_chat_redis_data
+  prompt_chat_etcd_data:
+    external: true
+    name: prompt_chat_etcd_data
+  prompt_chat_minio_data:
+    external: true
+    name: prompt_chat_minio_data
+  prompt_chat_milvus_data:
+    external: true
+    name: prompt_chat_milvus_data
+  prompt_chat_cubrid_data:
+    external: true
+    name: prompt_chat_cubrid_data
 
 networks:
   prompt_chat_net:
-    driver: bridge
-
-volumes:
-  cubrid_data:
+    external: true
+    name: prompt_chat_net

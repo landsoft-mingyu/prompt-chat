@@ -23,13 +23,19 @@ class RoyalApi(IReservationApiClient):
         """
         self.client = client
         self.settings = settings
+        # base_url 뒤에 슬래시 없이 정규화
+        self._base = settings.royal_api_base_url.rstrip("/")
 
-    async def _request(self, method: str, path: str, **kwargs) -> dict:
-        """공통 HTTP 요청 처리."""
+    def _url(self, suffix: str) -> str:
+        """suffix를 base에 이어 붙여 완전한 URL 반환."""
+        return f"{self._base}/{suffix.lstrip('/')}"
+
+    async def _request(self, method: str, url: str, **kwargs) -> dict:
+        """공통 HTTP 요청 처리. url은 완전한 절대 URL."""
         try:
             response = await self.client.request(
                 method,
-                path,
+                url,
                 timeout=self.settings.royal_api_timeout_sec,
                 **kwargs,
             )
@@ -41,13 +47,15 @@ class RoyalApi(IReservationApiClient):
                 error_code="ROYAL_API_TIMEOUT",
             ) from e
         except httpx.HTTPStatusError as e:
+            ct = e.response.headers.get("content-type", "")
+            body = e.response.text if "json" in ct else f"HTTP {e.response.status_code}"
             if 400 <= e.response.status_code < 500:
                 raise ValidationException(
-                    f"요청 오류: {e.response.text}",
+                    f"요청 오류: {body}",
                     error_code="ROYAL_API_VALIDATION_ERROR",
                 ) from e
             raise DatabaseException(
-                f"ROYAL 서버 오류: {e.response.text}",
+                f"ROYAL 서버 오류: {body}",
                 error_code="ROYAL_API_SERVER_ERROR",
             ) from e
         except httpx.RequestError as e:
@@ -57,54 +65,29 @@ class RoyalApi(IReservationApiClient):
             ) from e
 
     async def get_programs(self, group_code: str) -> dict:
-        """프로그램 목록 조회.
-
-        GET {royal_api_base_url}/ROYAL/api/v1/res/list?groupCode=...
-        """
         return await self._request(
-            "GET",
-            "/ROYAL/api/v1/res/list",
-            params={"groupCode": group_code},
+            "GET", self._url("list"), params={"groupCode": group_code}
         )
 
     async def get_program_detail(self, res_idx: str) -> dict:
-        """프로그램 상세 조회.
-
-        GET {royal_api_base_url}/ROYAL/api/v1/res/view?resIdx=...
-        """
-        return await self._request(
-            "GET",
-            "/ROYAL/api/v1/res/view",
-            params={"resIdx": res_idx},
-        )
+        return await self._request("GET", self._url("view"), params={"resIdx": res_idx})
 
     async def get_parts(self, res_idx: str, res_part_date: str) -> dict:
-        """회차 목록 조회.
-
-        GET {royal_api_base_url}/ROYAL/api/v1/res/parts?resIdx=...&resPartDate=...
-        """
         return await self._request(
             "GET",
-            "/ROYAL/api/v1/res/parts",
+            self._url("parts"),
             params={"resIdx": res_idx, "resPartDate": res_part_date},
         )
 
     async def get_reservation(self, res_no: str, res_mobile: str) -> dict:
-        """예약 단건 조회.
-
-        GET {royal_api_base_url}/ROYAL/api/v1/res/myReservation?resNo=...&resMobile=...
-        """
         return await self._request(
             "GET",
-            "/ROYAL/api/v1/res/myReservation",
+            self._url("myReservation"),
             params={"resNo": res_no, "resMobile": res_mobile},
         )
 
     async def create_reservation(self, payload: dict) -> dict:
-        """예약 생성.
-
-        POST {royal_api_base_url}/ROYAL/api/v1/res/insert
-        """
+        """예약 생성."""
         # snake_case → camelCase 변환
         api_payload = {
             "resIdx": payload.get("res_idx"),
@@ -117,7 +100,9 @@ class RoyalApi(IReservationApiClient):
             else None,
             "resName": payload.get("res_name"),
             "resMobile": payload.get("res_mobile"),
-            "resUserCnt": payload.get("res_user_cnt"),
+            "resUserCnt": str(payload.get("res_user_cnt"))
+            if payload.get("res_user_cnt") is not None
+            else None,
             "resPriPolicyYn": payload.get("res_pri_policy_yn"),
             "resEml": payload.get("res_eml"),
             "resGroupNm": payload.get("res_group_nm"),
@@ -150,29 +135,13 @@ class RoyalApi(IReservationApiClient):
                 error_code="ROYAL_API_INVALID_PARAMS",
             )
 
-        return await self._request(
-            "POST",
-            "/ROYAL/api/v1/res/insert",
-            json=api_payload,
-        )
+        return await self._request("POST", self._url("insert"), json=api_payload)
 
     async def cancel_reservation(
         self, res_no: str, res_mobile: str, reason: str | None = None
     ) -> dict:
-        """예약 취소.
-
-        POST {royal_api_base_url}/ROYAL/api/v1/res/cancel
-        """
-        # snake_case → camelCase 변환
-        api_payload = {
-            "resNo": res_no,
-            "resMobile": res_mobile,
-        }
+        """예약 취소."""
+        api_payload: dict = {"resNo": res_no, "resMobile": res_mobile}
         if reason:
             api_payload["reason"] = reason
-
-        return await self._request(
-            "POST",
-            "/ROYAL/api/v1/res/cancel",
-            json=api_payload,
-        )
+        return await self._request("POST", self._url("cancel"), json=api_payload)

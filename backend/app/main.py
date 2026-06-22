@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 
+from app.api.routes.chat import router as chat_router
+from app.api.routes.chatbot import router as chatbot_router
 from app.api.routes.health import router as health_router
 from app.api.routes.rag import router as rag_router
 from app.api.routes.reservation import router as reservation_router
@@ -36,6 +38,18 @@ async def lifespan(app: FastAPI):
         verify=False,
     )
 
+    # 시작: LLM HTTP 클라이언트 생성 (vLLM OpenAI-compatible)
+    app.state.llm_client = httpx.AsyncClient(
+        base_url=settings.llm_base_url,
+        timeout=httpx.Timeout(settings.llm_timeout_sec),
+        headers={"Authorization": f"Bearer {settings.llm_api_key}"},
+    )
+
+    # 시작: Redis 세션 저장소 생성 (싱글톤 — 커넥션 풀 공유)
+    from app.repositories.redis.session_store import RedisSessionStore
+
+    app.state.session_store = RedisSessionStore(redis_url=settings.redis_url)
+
     yield
 
     # 종료: DB engine 정리
@@ -43,6 +57,10 @@ async def lifespan(app: FastAPI):
 
     # 종료: HTTP 클라이언트 정리
     await app.state.royal_api_client.aclose()
+    await app.state.llm_client.aclose()
+
+    # 종료: Redis 연결 정리
+    await app.state.session_store.close()
 
 
 # FastAPI 앱 생성
@@ -101,3 +119,5 @@ async def prompt_chat_exception_handler(_request, exc: PromptChatException):
 app.include_router(health_router)
 app.include_router(rag_router)
 app.include_router(reservation_router)
+app.include_router(chatbot_router)
+app.include_router(chat_router)

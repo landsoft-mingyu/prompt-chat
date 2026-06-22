@@ -3,7 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.adapters.http.royal_api import RoyalApi
-from app.dependencies import get_royal_api
+from app.dependencies import get_reservation_form_service, get_royal_api
+from app.repositories.interfaces.reservation_form_service import IReservationFormService
 from app.schemas.reservation import (
     ReservationCancelRequest,
     ReservationCancelResponse,
@@ -33,6 +34,18 @@ async def list_parts(
 ) -> dict:
     """특정 프로그램의 예약 가능 회차 목록 조회 (ROYAL API 경유)."""
     return await royal_api.get_parts(res_idx, res_part_date)
+
+
+@router.get("/{res_idx}/form")
+async def get_form_schema(
+    res_idx: str,
+    form_service: IReservationFormService = Depends(get_reservation_form_service),
+) -> dict:
+    """예약 신청 폼 스키마 조회."""
+    schema = await form_service.build_form_schema(res_idx)
+    if schema is None:
+        raise HTTPException(status_code=404, detail="예약 프로그램을 찾을 수 없습니다")
+    return schema
 
 
 @router.get("/my-reservation")

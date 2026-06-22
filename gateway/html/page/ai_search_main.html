@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/common.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <title>AI 궁능유적본부</title>
+  <style>
+    /* ── Chat Screen ─────────────────────────────── */
+    #landing_screen { flex: 1 }
+    #landing_screen.hide { display: none !important }
+    .chat_screen { display: none; flex: 1; min-height: 0; overflow: hidden }
+    .chat_screen.on { display: flex }
+    .chat_col { flex: 1; display: flex; flex-flow: column; min-height: 0; min-width: 0 }
+    .chat_messages { flex: 1; overflow-y: auto; padding: 1.5rem 1.75rem; display: flex; flex-flow: column; gap: 1rem }
+    .chat_bottom { flex-shrink: 0; padding: 0.75rem 1.5rem 1rem; border-top: 1px solid #f0f0f0; background: var(--white) }
+    .chat_bottom .chat_input_wrap { width: 100%; max-width: 52rem; margin: 0 auto; border-radius: 1rem }
+
+    /* ── Side Column ─────────────────────────────── */
+    .side_col { display: none; width: 22rem; flex-shrink: 0; border-left: 1px solid #eee; overflow: hidden; background: #fafafa; flex-flow: column }
+    .side_col.on { display: flex }
+    .side_col_hd { padding: 1.1rem 1.25rem 0.8rem; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee }
+    .side_col_tit { font-size: 0.85rem; font-weight: 700; color: #333 }
+    .side_col_close { width: 2rem; height: 2rem; border-radius: 50%; background: #eee; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; color: #666; border: none; flex-shrink: 0 }
+    .side_col_close:hover { background: #ddd }
+    .side_col_body { flex: 1; padding: 1rem 1.25rem; overflow-y: auto }
+
+    /* ── Suggestion Chips ────────────────────────── */
+    .suggestion_chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem }
+    .suggestion_chip { display: inline-flex; align-items: center; height: 2rem; padding: 0 0.9rem; border-radius: 1rem; border: 1px solid var(--primary); color: var(--primary); background: var(--white); font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s }
+    .suggestion_chip:hover { background: var(--primary5) }
+
+    /* ── Palace Filter Chips ─────────────────────── */
+    .palace_filter { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem }
+    .palace_chip { display: inline-flex; align-items: center; height: 1.85rem; padding: 0 0.8rem; border-radius: 0.3rem; border: 1px solid #ddd; color: #555; background: var(--white); font-size: 0.7rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s }
+    .palace_chip:hover, .palace_chip.on { border-color: var(--primary); color: var(--primary); background: var(--primary5) }
+
+    /* ── Parts / Time Slots ──────────────────────── */
+    .parts_list { display: flex; flex-flow: column; gap: 0.5rem }
+    .parts_item { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.75rem; border-radius: 0.5rem; border: 1px solid #eee; background: var(--white); gap: 0.5rem }
+    .parts_time { font-size: 0.78rem; font-weight: 600; color: #333 }
+    .parts_avail { font-size: 0.68rem; font-weight: 600; margin-top: 0.15rem }
+    .parts_avail.ok { color: #1a9a4a }
+    .parts_avail.closed { color: #aaa }
+    .parts_select_btn { height: 1.7rem; padding: 0 0.75rem; border-radius: 0.3rem; border: 1px solid var(--primary); color: var(--primary); background: transparent; font-size: 0.68rem; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0 }
+    .parts_select_btn:hover:not(:disabled) { background: var(--primary5) }
+    .parts_select_btn:disabled { border-color: #ccc; color: #ccc; cursor: default }
+
+    /* ── Calendar ────────────────────────────────── */
+    .cal_hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem }
+    .cal_month { font-size: 0.85rem; font-weight: 700; color: #333 }
+    .cal_nav { width: 1.85rem; height: 1.85rem; border-radius: 50%; background: #eee; border: none; cursor: pointer; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center }
+    .cal_nav:hover { background: #ddd }
+    .cal_grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px }
+    .cal_day_hd { text-align: center; font-size: 0.62rem; font-weight: 600; color: #999; padding-bottom: 0.3rem }
+    .cal_day_hd:first-child { color: #e05 }
+    .cal_day_hd:last-child { color: #37c }
+    .cal_cell { display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1; border-radius: 50%; font-size: 0.73rem; cursor: pointer; color: #333 }
+    .cal_cell:hover:not(.empty):not(.past) { background: var(--primary5); color: var(--primary) }
+    .cal_cell.empty { visibility: hidden; cursor: default }
+    .cal_cell.past { color: #ccc; cursor: default }
+    .cal_cell.today { font-weight: 700; color: var(--primary) }
+    .cal_cell.selected { background: var(--primary); color: #fff; font-weight: 700 }
+
+    /* ── Plain-text chat (no bubbles) ───────────── */
+    .chat_messages .chat_result_item.user { justify-content: flex-end }
+    .chat_messages .chat_bubble {
+        max-width: 82%;
+        background: transparent !important;
+        color: #888;
+        padding: 0;
+        border-radius: 0;
+        font-size: 0.82rem;
+        font-weight: 500;
+        line-height: 155%;
+        word-break: keep-all;
+        text-align: right
+    }
+    .chat_messages .chat_result_item.assistant .answer_txt {
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        font-size: 0.85rem;
+        color: #222;
+        line-height: 175%;
+        word-break: keep-all
+    }
+    .chat_messages .chat_result_item.assistant .answer_txt.error {
+        background: transparent !important;
+        color: #B00020
+    }
+
+    /* ── Sources Toggle ──────────────────────────── */
+    .sources_toggle { margin-top: 1rem; border-top: 1px solid #eee; padding-top: 0.75rem }
+    .sources_toggle_btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: none; border: none; cursor: pointer;
+        font-size: 0.72rem; font-weight: 600; color: #999;
+        padding: 0
+    }
+    .sources_toggle_btn:hover { color: #555 }
+    .sources_toggle_btn .arrow { font-size: 0.6rem; transition: transform 0.2s }
+    .sources_toggle_btn.open .arrow { transform: rotate(180deg) }
+    .sources_toggle_body { display: none; margin-top: 0.65rem; display: flex; flex-flow: column; gap: 0.65rem }
+    .sources_toggle_body.hidden { display: none }
+    .source_chunk { padding: 0.65rem 0.85rem; border-radius: 0.4rem; background: #f7f7f7; border-left: 2px solid var(--primary) }
+    .source_chunk_tit { font-size: 0.72rem; font-weight: 700; color: #333; margin-bottom: 0.3rem; display: flex; justify-content: space-between }
+    .source_chunk_score { font-size: 0.65rem; font-weight: 400; color: #aaa }
+    .source_chunk_body { font-size: 0.7rem; color: #666; line-height: 155%; white-space: pre-wrap; word-break: keep-all }
+
+    /* ── Input focus 파란 테두리 제거 ──────────────── */
+    .chat_input:focus { outline: none; box-shadow: none }
+  </style>
+</head>
+<body>
+<ul class="skip_menu">
+  <li><a href="#contents_wrap">검색 바로가기</a></li>
+</ul>
+
+<div class="contents_wrap" id="contents_wrap">
+    <!-- [S] left_menu_wrap -->
+    <div class="left_menu_wrap">
+        <div class="left_menu_hd">
+            <a href="./ai_search_main.html"><img src="../img/layout/hd_logo.svg" alt="궁능 ai" class="hd_logo"></a>
+        </div>
+        <div class="left_menu_con_wrap">
+            <div class="left_menu_fix">
+                <ul class="left_menu_tab tab_menu">
+                    <li class="tab_item tab_link on" data-tab="tab_item_menu">
+                        <a href="#;" class="inn">메뉴<span class="hidden">현재 선택됨</span></a>
+                    </li>
+                    <li class="tab_item tab_link" data-tab="tab_item_archive">
+                        <a href="#;" class="inn">아카이브</a>
+                    </li>
+                </ul>
+                <a href="#;" id="new_chat_btn" class="btn sz_lg bd_secondary hover_ty_bd ty_left mt_10">
+                    <img src="../img/icon/ic_plus.svg" alt="">
+                    새 대화 시작
+                </a>
+            </div>
+            <div class="left_menu_con">
+                <div class="tab_con_wrap">
+                    <!-- 메뉴 탭 -->
+                    <div class="tab_con tab_item_menu on">
+                        <div class="hidden">메뉴</div>
+                        <ul class="con_menu_list">
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn" data-menu="curation">
+                                    <span class="left"><img src="../img/icon/ic_curation.svg" alt="">큐레이션</span>
+                                </a>
+                            </li>
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn" id="menu_reservation">
+                                    <span class="left"><img src="../img/icon/ic_reservation.svg" alt="">통합예약</span>
+                                </a>
+                            </li>
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn" data-menu="guide">
+                                    <span class="left"><img src="../img/icon/ic_visitor_guide.svg" alt="">관람안내</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- 아카이브 탭 -->
+                    <div class="tab_con tab_item_archive">
+                        <div class="hidden">아카이브</div>
+                    </div>
+                </div>
+                <div class="left_menu_btm_info">
+                    <a href="https://royal.khs.go.kr/ROYAL/main/index.do" target="_blank" title="새 창 열기" class="btn sz_lg bg_secondary_02 hover_ty_bg ty_left">
+                        <img src="../img/icon/ic_official.svg" alt="">
+                        공식사이트
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- [E] left_menu_wrap -->
+
+    <!-- [S] search_wrap -->
+    <div class="search_wrap search_main_wrap" id="search_wrap">
+
+        <!-- [S] Landing Screen -->
+        <div class="search_main" id="landing_screen">
+           <div class="inner">
+               <div class="intro_txt_wrap">
+                    <div class="intro_logo"><img src="../img/layout/logo_intro.svg" alt=""></div>
+                    <div class="intro_txt">조선왕조 궁능 · 관람 · 예약 안내</div>
+               </div>
+               <div class="chat_input_wrap">
+                    <div class="chat_input_inn">
+                        <label for="landing_input" class="hidden">검색어 입력</label>
+                        <input type="text" class="chat_input" id="landing_input" placeholder="궁능 안내 챗봇에게 물어보기 (예: 경복궁 언제 지어졌어?)">
+                        <div class="btn_wrap">
+                            <button type="button" class="search_btn btn" id="landing_send_btn" aria-label="검색">
+                                <img src="../img/icon/ic_search.svg" alt="">
+                            </button>
+                        </div>
+                    </div>
+               </div>
+               <div class="info_box_wrap">
+                   <div class="info_box_ic"><img src="../img/icon/ic_info_box.svg" alt=""></div>
+                   <div class="info_box_txt_wrap">
+                       <div class="info_box_txt ty_01">좌측 <span class="fw_sb c_primary">큐레이션 / 통합예약 / 관람안내</span> 메뉴에서 원하시는 항목을 선택해주세요.</div>
+                       <div class="info_box_txt ty_02">또는 아래 입력창에 직접 질문해주세요.</div>
+                   </div>
+               </div>
+           </div>
+        </div>
+        <!-- [E] Landing Screen -->
+
+        <!-- [S] Chat Screen -->
+        <div class="chat_screen" id="chat_screen">
+            <!-- Chat column (left) -->
+            <div class="chat_col">
+                <div class="chat_messages" id="chat_messages"></div>
+                <div class="chat_bottom">
+                    <div class="chat_input_wrap">
+                        <div class="chat_input_inn">
+                            <label for="chat_input" class="hidden">메시지 입력</label>
+                            <input type="text" class="chat_input" id="chat_input" placeholder="메시지를 입력하세요">
+                            <div class="btn_wrap">
+                                <button type="button" class="search_btn btn" id="chat_send_btn" aria-label="전송">
+                                    <img src="../img/icon/ic_search.svg" alt="">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Side column (right - calendar / slots / form) -->
+            <div class="side_col" id="side_col">
+                <div class="side_col_hd">
+                    <span class="side_col_tit" id="side_col_tit">정보</span>
+                    <button class="side_col_close" id="side_col_close" aria-label="패널 닫기">×</button>
+                </div>
+                <div class="side_col_body" id="side_col_body"></div>
+            </div>
+        </div>
+        <!-- [E] Chat Screen -->
+
+    </div>
+    <!-- [E] search_wrap -->
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── Utilities ──────────────────────────────────────────────── */
+    const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+    const $$ = (sel, ctx) => Array.from((ctx || document).querySelectorAll(sel));
+
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function stripMd(v) {
+        return String(v == null ? '' : v)
+            .replace(/^#{1,6}\s*/gm, '')              // ### 제목 제거
+            .replace(/\*\*([^*\n]+)\*\*/g, '$1')      // **굵게** → 텍스트
+            .replace(/\*([^*\n]+)\*/g, '$1')           // *기울임* → 텍스트
+            .replace(/^-{3,}\s*$/gm, '')               // --- 구분선 제거
+            .replace(/^\s*[-*]\s+/gm, '• ')            // - 목록 → •
+            .replace(/^\s*\d+\.\s+/gm, '')             // 1. 목록 번호 제거
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')   // [텍스트](링크) → 텍스트
+            .replace(/`{1,3}([^`]*)`{1,3}/g, '$1')     // `코드` → 텍스트
+            .replace(/^>\s*/gm, '')                     // > 인용 제거
+            .replace(/\n{3,}/g, '\n\n')                 // 연속 빈줄 → 최대 2줄
+            .trim();
+    }
+
+    function fmt(v) {
+        return esc(stripMd(v)).replace(/\n/g, '<br>');
+    }
+
+    /* ── State ──────────────────────────────────────────────────── */
+    let sessionId = 'sess-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    let calYear = 0;
+    let calMonth = 0;
+    let busy = false;
+
+    /* ── Chip config ────────────────────────────────────────────── */
+    const WELCOME_CHIPS = ['이번 달 행사 안내해줘', '각 궁능별 프로그램 안내해줘'];
+    const PALACE_CHIPS  = ['전체', '경복궁', '창덕궁', '덕수궁', '창경궁', '종묘', '조선왕릉'];
+    const PALACE_MSG    = {
+        '전체':     '예약 가능한 전체 프로그램 목록 보여줘',
+        '경복궁':   '경복궁 예약 가능한 프로그램 보여줘',
+        '창덕궁':   '창덕궁 예약 가능한 프로그램 보여줘',
+        '덕수궁':   '덕수궁 예약 가능한 프로그램 보여줘',
+        '창경궁':   '창경궁 예약 가능한 프로그램 보여줘',
+        '종묘':     '종묘 예약 가능한 프로그램 보여줘',
+        '조선왕릉': '조선왕릉 예약 가능한 프로그램 보여줘',
+    };
+
+    /* ── DOM ────────────────────────────────────────────────────── */
+    const landingScreen  = $('#landing_screen');
+    const chatScreen     = $('#chat_screen');
+    const chatMessages   = $('#chat_messages');
+    const sideCol        = $('#side_col');
+    const sideColTit     = $('#side_col_tit');
+    const sideColBody    = $('#side_col_body');
+    const landingInput   = $('#landing_input');
+    const chatInput      = $('#chat_input');
+    const landingSendBtn = $('#landing_send_btn');
+    const chatSendBtn    = $('#chat_send_btn');
+
+    /* ── Mode management ────────────────────────────────────────── */
+    function enterChatMode() {
+        landingScreen.classList.add('hide');
+        chatScreen.classList.add('on');
+        chatInput.focus();
+    }
+
+    function resetChat() {
+        sessionId = 'sess-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+        chatMessages.innerHTML = '';
+        closeSidePanel();
+        chatScreen.classList.remove('on');
+        landingScreen.classList.remove('hide');
+        landingInput.focus();
+    }
+
+    /* ── Side panel ─────────────────────────────────────────────── */
+    function openSidePanel(title, html) {
+        sideColTit.textContent = title;
+        sideColBody.innerHTML  = html;
+        sideCol.classList.add('on');
+    }
+
+    function closeSidePanel() {
+        sideCol.classList.remove('on');
+        sideColBody.innerHTML = '';
+    }
+
+    /* ── Message helpers ────────────────────────────────────────── */
+    function addUserMsg(text) {
+        const el = document.createElement('div');
+        el.className = 'chat_result_item user';
+        el.innerHTML = '<div class="chat_bubble">' + esc(text) + '</div>';
+        chatMessages.appendChild(el);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addAssistantMsg(html) {
+        const item   = document.createElement('div');
+        item.className = 'chat_result_item assistant';
+        const avatar = document.createElement('div');
+        avatar.className = 'chat_ai_avatar';
+        avatar.innerHTML = '<img src="../img/icon/ic_info_box.svg" alt="AI">';
+        const body   = document.createElement('div');
+        body.className = 'chat_ai_body';
+        body.innerHTML = html;
+        item.appendChild(avatar);
+        item.appendChild(body);
+        chatMessages.appendChild(item);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return body;
+    }
+
+    function addLoadingMsg() {
+        return addAssistantMsg('<div class="answer_txt">답변 생성 중...</div>');
+    }
+
+    /* ── Rendering ──────────────────────────────────────────────── */
+    function renderProgramCards(items) {
+        if (!Array.isArray(items) || !items.length) return '';
+        const cards = items.slice(0, 8).map(function (item) {
+            const id        = String(item.res_idx   || item.resIdx   || '');
+            const groupCode = String(item.group_code || item.groupCode || '');
+            const groupName = item.group_name || item.groupName || '';
+            const title     = item.res_title  || item.resTitle  || item.vw_title || item.vwTitle || '예약 프로그램';
+            const place     = groupName || item.res_place || item.resPlace || item.site_nm || '';
+            const period    = item.res_period || item.resPeriod || '';
+            const meta      = place ? esc(place) : (period ? esc(period) : (id ? 'No. ' + esc(id) : ''));
+            return '<li class="reservation_card">' +
+                '<div class="reservation_card_body">' +
+                    '<div class="reservation_card_tit">' + esc(title) + '</div>' +
+                    (meta ? '<div class="reservation_card_id">' + meta + '</div>' : '') +
+                '</div>' +
+                '<div class="reservation_card_btns">' +
+                    (id ? '<button type="button" class="reservation_btn ty_outline js_detail_btn"' +
+                        ' data-res-idx="'   + esc(id)    + '"' +
+                        ' data-res-title="' + esc(title) + '">상세정보</button>' : '') +
+                    (id ? '<button type="button" class="reservation_btn ty_fill js_reserve_btn"' +
+                        ' data-res-idx="'    + esc(id)        + '"' +
+                        ' data-group-code="' + esc(groupCode) + '"' +
+                        ' data-res-title="'  + esc(title)     + '">예약하기</button>' : '') +
+                '</div>' +
+            '</li>';
+        }).join('');
+        return '<ul class="reservation_card_list">' + cards + '</ul>';
+    }
+
+    function renderSuggestionChips(chips) {
+        if (!chips || !chips.length) return '';
+        return '<div class="suggestion_chips">' +
+            chips.map(function (c) {
+                return '<button type="button" class="suggestion_chip" data-chip="' + esc(c) + '">' + esc(c) + '</button>';
+            }).join('') +
+        '</div>';
+    }
+
+    function renderPalaceFilter() {
+        return '<div class="palace_filter">' +
+            PALACE_CHIPS.map(function (p) {
+                return '<button type="button" class="palace_chip" data-palace="' + esc(p) + '">' + esc(p) + '</button>';
+            }).join('') +
+        '</div>';
+    }
+
+    function renderSources(sources) {
+        if (!Array.isArray(sources) || !sources.length) return '';
+        const uid = 'src_' + Math.random().toString(36).slice(2, 8);
+        const chunks = sources.map(function (s, i) {
+            const score = (s.score != null) ? (s.score * 100).toFixed(0) + '%' : '';
+            const content = stripMd(s.content || '').slice(0, 300) + (s.content && s.content.length > 300 ? '…' : '');
+            return '<div class="source_chunk">' +
+                '<div class="source_chunk_tit">' + esc(s.title || '자료 ' + (i + 1)) + '<span class="source_chunk_score">' + esc(score) + '</span></div>' +
+                (content ? '<div class="source_chunk_body">' + esc(content) + '</div>' : '') +
+            '</div>';
+        }).join('');
+        return '<div class="sources_toggle">' +
+            '<button type="button" class="sources_toggle_btn" data-target="' + uid + '">' +
+                '참고 자료 ' + sources.length + '건 <span class="arrow">▼</span>' +
+            '</button>' +
+            '<div class="sources_toggle_body hidden" id="' + uid + '">' + chunks + '</div>' +
+        '</div>';
+    }
+
+    /* ── Calendar ───────────────────────────────────────────────── */
+    function buildCalHTML(year, month) {
+        const today     = new Date();
+        const todayY    = today.getFullYear();
+        const todayM    = today.getMonth();
+        const todayD    = today.getDate();
+        const firstDay  = new Date(year, month, 1).getDay();
+        const lastDate  = new Date(year, month + 1, 0).getDate();
+        const MONTHS    = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+        let g = '<div class="cal_hd">' +
+            '<button class="cal_nav" id="cal_prev">&#8249;</button>' +
+            '<span class="cal_month">' + year + '년 ' + MONTHS[month] + '</span>' +
+            '<button class="cal_nav" id="cal_next">&#8250;</button>' +
+        '</div>' +
+        '<div class="cal_grid">';
+
+        ['일','월','화','수','목','금','토'].forEach(function (d) { g += '<div class="cal_day_hd">' + d + '</div>'; });
+
+        for (let i = 0; i < firstDay; i++) g += '<div class="cal_cell empty"></div>';
+
+        for (let d = 1; d <= lastDate; d++) {
+            const cellDate = new Date(year, month, d);
+            const past   = cellDate < new Date(todayY, todayM, todayD);
+            const isToday= d === todayD && month === todayM && year === todayY;
+            const ds     = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            let cls = 'cal_cell';
+            if (past)    cls += ' past';
+            if (isToday) cls += ' today';
+            g += '<div class="' + cls + '" data-date="' + ds + '">' + d + '</div>';
+        }
+        return '<div class="cal_wrap">' + g + '</div></div>';
+    }
+
+    function bindCalNavEvents() {
+        const prev = $('#cal_prev', sideColBody);
+        const next = $('#cal_next', sideColBody);
+        if (prev) prev.addEventListener('click', function () {
+            calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+            sideColBody.innerHTML = buildCalHTML(calYear, calMonth);
+            bindCalNavEvents();
+        });
+        if (next) next.addEventListener('click', function () {
+            calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+            sideColBody.innerHTML = buildCalHTML(calYear, calMonth);
+            bindCalNavEvents();
+        });
+    }
+
+    function showCalendar() {
+        const now = new Date();
+        calYear  = now.getFullYear();
+        calMonth = now.getMonth();
+        openSidePanel('날짜 선택', buildCalHTML(calYear, calMonth));
+        bindCalNavEvents();
+    }
+
+    /* ── Parts list side panel ──────────────────────────────────── */
+    function showPartsList(items) {
+        if (!Array.isArray(items) || !items.length) return;
+        let html = '<div class="parts_list">';
+        items.slice(0, 20).forEach(function (p) {
+            const ptIdx  = String(p.pt_idx || p.ptIdx || '');
+            const start  = p.res_part_start_time || p.resPartStartTime || '';
+            const end    = p.res_part_end_time   || p.resPartEndTime   || '';
+            const closed = (p.res_dl_yn || p.resDlYn || 'N') === 'Y';
+            const time   = start + (end ? ' ~ ' + end : '');
+            html += '<div class="parts_item">' +
+                '<div>' +
+                    '<div class="parts_time">' + esc(time) + '</div>' +
+                    '<div class="parts_avail ' + (closed ? 'closed' : 'ok') + '">' + (closed ? '마감' : '예약 가능') + '</div>' +
+                '</div>' +
+                '<button type="button" class="parts_select_btn"' +
+                    (closed ? ' disabled' : '') +
+                    ' data-pt-idx="' + esc(ptIdx) + '"' +
+                    ' data-time="'   + esc(start)  + '">' +
+                    (closed ? '마감' : '선택') +
+                '</button>' +
+            '</div>';
+        });
+        html += '</div>';
+        openSidePanel('회차 선택', html);
+    }
+
+    /* ── Core API call ──────────────────────────────────────────── */
+    async function sendMessage(text) {
+        if (!text || busy) return;
+        busy = true;
+        setLoading(true);
+        enterChatMode();
+        addUserMsg(text);
+        const loadEl = addLoadingMsg();
+
+        try {
+            const resp = await fetch('/api/v1/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, site_code: 'ROYAL', message: text }),
+            });
+            if (!resp.ok) throw new Error('서버 오류 (' + resp.status + ')');
+            const data = await resp.json();
+            handleResponse(loadEl, data);
+        } catch (err) {
+            loadEl.innerHTML = '<div class="answer_txt error">' + esc(err.message || '오류가 발생했습니다.') + '</div>';
+        } finally {
+            busy = false;
+            setLoading(false);
+            chatInput.focus();
+        }
+    }
+
+    function handleResponse(loadEl, data) {
+        const intent     = data.intent    || '';
+        const mode       = data.mode      || 'chat';
+        const actionCard = data.action_card;
+        const sources    = data.sources;
+
+        /* Build body HTML */
+        let html = '<div class="answer_txt">' + fmt(data.message) + '</div>';
+
+        /* Inline program list */
+        if (actionCard && actionCard.type === 'program_list' && Array.isArray(actionCard.items)) {
+            html += renderProgramCards(actionCard.items);
+        }
+
+        /* Palace filter chips after reservation_list */
+        if (intent === 'reservation_list') {
+            html += renderPalaceFilter();
+        }
+
+        /* RAG sources */
+        if (mode === 'rag' && sources && sources.length) {
+            html += renderSources(sources);
+        }
+
+        loadEl.innerHTML = html;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        /* Parts list in side panel */
+        if (actionCard && actionCard.type === 'parts_list' && Array.isArray(actionCard.items)) {
+            showPartsList(actionCard.items);
+        }
+
+        /* Calendar when bot needs a date */
+        const needsDate = Array.isArray(data.slots_needed) && (
+            data.slots_needed.includes('res_part_date') ||
+            data.slots_needed.includes('res_date')
+        );
+        if (needsDate) showCalendar();
+    }
+
+    /* ── Loading state ──────────────────────────────────────────── */
+    function setLoading(on) {
+        landingSendBtn.disabled = on;
+        chatSendBtn.disabled    = on;
+    }
+
+    /* ── Reservation welcome ────────────────────────────────────── */
+    function startReservationChat() {
+        enterChatMode();
+        addAssistantMsg(
+            '<div class="answer_txt">예약 도와드릴게요! 어떤 서비스를 이용하시겠어요?</div>' +
+            renderSuggestionChips(WELCOME_CHIPS)
+        );
+    }
+
+    /* ── Event wiring ───────────────────────────────────────────── */
+    landingSendBtn.addEventListener('click', function () {
+        const msg = landingInput.value.trim();
+        if (msg) { landingInput.value = ''; sendMessage(msg); }
+    });
+    landingInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); landingSendBtn.click(); }
+    });
+
+    chatSendBtn.addEventListener('click', function () {
+        const msg = chatInput.value.trim();
+        if (msg) { chatInput.value = ''; sendMessage(msg); }
+    });
+    chatInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); chatSendBtn.click(); }
+    });
+
+    /* Delegated clicks ─────────────────────────────────────────── */
+    document.addEventListener('click', function (e) {
+        /* Suggestion chip */
+        const chip = e.target.closest('.suggestion_chip');
+        if (chip) { sendMessage(chip.getAttribute('data-chip')); return; }
+
+        /* Palace filter chip */
+        const palace = e.target.closest('.palace_chip');
+        if (palace) {
+            const p = palace.getAttribute('data-palace');
+            $$('.palace_chip').forEach(function (c) { c.classList.remove('on'); });
+            palace.classList.add('on');
+            sendMessage(PALACE_MSG[p] || p + ' 예약 가능한 프로그램 보여줘');
+            return;
+        }
+
+        /* Sources toggle */
+        const srcBtn = e.target.closest('.sources_toggle_btn');
+        if (srcBtn) {
+            const targetId = srcBtn.getAttribute('data-target');
+            const body = document.getElementById(targetId);
+            if (body) {
+                const isOpen = !body.classList.contains('hidden');
+                body.classList.toggle('hidden', isOpen);
+                srcBtn.classList.toggle('open', !isOpen);
+            }
+            return;
+        }
+
+        /* 상세정보 버튼 */
+        const detailBtn = e.target.closest('.js_detail_btn');
+        if (detailBtn) {
+            const title = detailBtn.getAttribute('data-res-title');
+            sendMessage('"' + title + '" 프로그램 상세 정보를 알려줘');
+            return;
+        }
+
+        /* 예약하기 버튼 — group_code + res_idx 포함, 캘린더 즉시 표시 */
+        const resBtn = e.target.closest('.js_reserve_btn');
+        if (resBtn) {
+            const idx       = resBtn.getAttribute('data-res-idx');
+            const groupCode = resBtn.getAttribute('data-group-code') || '';
+            const title     = resBtn.getAttribute('data-res-title');
+            showCalendar();
+            sendMessage('group_code: ' + groupCode + ', res_idx: ' + idx + ' 인 "' + title + '" 프로그램을 예약하고 싶습니다. 방문 날짜를 선택할게요.');
+            return;
+        }
+
+        /* Parts select */
+        const partsBtn = e.target.closest('.parts_select_btn');
+        if (partsBtn && !partsBtn.disabled) {
+            const ptIdx = partsBtn.getAttribute('data-pt-idx');
+            const time  = partsBtn.getAttribute('data-time');
+            closeSidePanel();
+            sendMessage(time + ' 회차(' + ptIdx + ')로 예약할게요');
+            return;
+        }
+
+        /* Calendar date pick */
+        const calCell = e.target.closest('.cal_cell');
+        if (calCell && !calCell.classList.contains('empty') && !calCell.classList.contains('past')) {
+            const date = calCell.getAttribute('data-date');
+            if (!date) return;
+            $$('.cal_cell.selected').forEach(function (c) { c.classList.remove('selected'); });
+            calCell.classList.add('selected');
+            closeSidePanel();
+            sendMessage(date + ' 날짜로 예약하고 싶어요');
+            return;
+        }
+
+        /* Tab menu */
+        const tabLink = e.target.closest('.tab_link');
+        if (tabLink) {
+            e.preventDefault();
+            const menu   = tabLink.closest('.tab_menu');
+            const dataTab= tabLink.getAttribute('data-tab');
+            if (!menu || !dataTab) return;
+            const container = tabLink.closest('.left_menu_wrap') || document;
+            const conWrap   = $('.tab_con_wrap', container);
+            if (!conWrap) return;
+            const targetCon = conWrap.querySelector('.tab_con.' + dataTab);
+            if (!targetCon) return;
+            $$('.tab_link', menu).forEach(function (a) { a.classList.remove('on'); });
+            $$('.tab_item.on .hidden', menu).forEach(function (n) { n.remove(); });
+            tabLink.classList.add('on');
+            const hidden = document.createElement('span');
+            hidden.className = 'hidden';
+            hidden.textContent = '현재 선택됨';
+            (tabLink.querySelector('.inn') || tabLink).appendChild(hidden);
+            $$('.tab_con', conWrap).forEach(function (c) { c.classList.remove('on'); });
+            targetCon.classList.add('on');
+            return;
+        }
+    });
+
+    /* 통합예약 menu */
+    const menuRes = $('#menu_reservation');
+    if (menuRes) menuRes.addEventListener('click', function (e) { e.preventDefault(); startReservationChat(); });
+
+    /* 새 대화 시작 */
+    const newChatBtn = $('#new_chat_btn');
+    if (newChatBtn) newChatBtn.addEventListener('click', function (e) { e.preventDefault(); resetChat(); });
+
+    /* Side panel close */
+    $('#side_col_close').addEventListener('click', closeSidePanel);
+
+    /* Layer popup (backward compat) */
+    window.open_layer_pop = function (pop) {
+        setTimeout(function () {
+            const popEl = document.getElementById(pop);
+            if (!popEl) return;
+            document.body.style.overflow = 'hidden';
+            const dim = popEl.closest('.dim');
+            if (dim) dim.style.display = 'block';
+        }, 50);
+    };
+    document.addEventListener('click', function (e) {
+        const closeBtn = e.target.closest('.pop_close');
+        if (!closeBtn) return;
+        e.preventDefault();
+        document.body.style.overflow = 'visible';
+        const dim = closeBtn.closest('.dim');
+        if (dim) dim.style.display = 'none';
+    });
+
+})();
+</script>
+
+</body>
+</html>

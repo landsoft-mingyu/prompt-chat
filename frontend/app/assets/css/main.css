@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #__nuxt {
+  height: 100%;
+  font-family: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  color: #1f2937;
+  background: #ffffff;
+}
+
+@layer components {
+  .kossis-gradient {
+    /* 연한 rose → 상아 → 연두 — 궁능 전통 색조 유지 */
+    background: linear-gradient(135deg, #fdf2f8 0%, #fffaf0 45%, #ecfdf5 100%);
+  }
+
+  .shadow-soft {
+    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.08);
+  }
+}

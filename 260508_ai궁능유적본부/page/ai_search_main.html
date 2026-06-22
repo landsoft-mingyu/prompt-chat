@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/common.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <title>AI 궁능유적본부</title>
+</head>
+<body>
+<!-- [S] skip menu -->
+<ul class="skip_menu">
+  <li><a href="#contents_wrap">검색 바로가기</a></li>
+</ul>
+<!-- [E] skip menu -->
+
+<!-- [S] contents_wrap -->
+<div class="contents_wrap" id="contents_wrap">
+    <!-- [S] left_menu_wrap -->
+    <div class="left_menu_wrap">
+        <div class="left_menu_hd">
+            <a href="./ai_search_main.html"><img src="../img/layout/hd_logo.svg" alt="궁능 ai" class="hd_logo"></a>
+        </div>
+        <div class="left_menu_con_wrap">
+            <div class="left_menu_fix">
+                <ul class="left_menu_tab tab_menu">
+                    <li class="tab_item tab_link on" data-tab="tab_item_menu">
+                        <a href="#;" class="inn">메뉴
+                            <span class="hidden">현재 선택됨</span>
+                        </a>
+                    </li>
+                    <li class="tab_item tab_link" data-tab="tab_item_archive">
+                        <a href="#;" class="inn">아카이브</a>
+                    </li>
+                </ul>
+                <a href="#;" class="btn sz_lg bd_secondary hover_ty_bd ty_left mt_10">
+                    <img src="../img/icon/ic_plus.svg" alt="">
+                    새 대화 시작
+                </a>
+            </div>
+            <div class="left_menu_con">
+                <!-- [S] 스크롤되는 영역 -->
+                <div class="tab_con_wrap">
+                    <!-- [S] 컨텐츠 :: 메뉴 -->
+                    <div class="tab_con tab_item_menu on">
+                        <div class="hidden">메뉴</div>
+                        <ul class="con_menu_list">
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn">
+                                    <span class="left"><img src="../img/icon/ic_curation.svg" alt="">큐레이션</span>
+                                </a>
+                            </li>
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn">
+                                    <span class="left"><img src="../img/icon/ic_reservation.svg" alt="">통합예약</span>
+                                </a>
+                            </li>
+                            <li class="con_menu_item">
+                                <a href="#;" class="con_menu_inn">
+                                    <span class="left"><img src="../img/icon/ic_visitor_guide.svg" alt="">관람안내</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- [E] 컨텐츠 :: 메뉴 -->
+                    <!-- [S] 컨텐츠 :: 아카이브 -->
+                    <div class="tab_con tab_item_archive">
+                        <div class="hidden">아카이브</div>
+                    </div>
+                    <!-- [E] 컨텐츠 :: 아카이브 -->
+                </div>
+                <!-- [E] 스크롤되는 영역 -->
+                <div class="left_menu_btm_info">
+                    <a href="https://royal.khs.go.kr/ROYAL/main/index.do" target="_blank" title="새 창 열기" class="btn sz_lg bg_secondary_02 hover_ty_bg ty_left">
+                        <img src="../img/icon/ic_official.svg" alt="">
+                        공식사이트
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- [E] left_menu_wrap -->
+    <!-- [S] search_wrap -->
+    <div class="search_wrap search_main_wrap">
+        <div class="search_main">
+           <div class="inner">
+               <div class="intro_txt_wrap">
+                    <div class="intro_logo"><img src="../img/layout/logo_intro.svg" alt=""></div>
+                    <div class="intro_txt">조선왕조 궁능 · 관람 · 예약 안내</div>
+               </div>
+               
+               <div class="chat_input_wrap">
+                    <div class="chat_input_inn">
+                        <label for="chat_input" class="hidden">검색어 입력</label>
+                        <input type="text" class="chat_input" id="chat_input" placeholder="궁능 안내 챗봇에게 물어보기 (예: 경복궁 언제 지어졌어?)">
+                        <div class="btn_wrap">
+                            <span class="chat_mode_label">AI 오케스트레이션</span>
+                            <button type="button" class="search_btn btn" aria-label="검색">
+                                <img src="../img/icon/ic_search.svg" alt="">
+                            </button>
+                        </div>
+                    </div>
+               </div>
+               
+               <div class="info_box_wrap">
+                   <div class="info_box_ic"><img src="../img/icon/ic_info_box.svg" alt=""></div>
+                   <div class="info_box_txt_wrap">
+                       <div class="info_box_txt ty_01">좌측 <span class="fw_sb c_primary">큐레이션 / 통합예약 / 관람안내</span> 메뉴에서 원하시는 항목을 선택해주세요.</div>
+                       <div class="info_box_txt ty_02">또는 아래 입력창에 직접 질문해주세요.</div>
+                   </div>
+               </div>
+               <div class="chat_result_panel" id="chat_result_panel" aria-live="polite"></div>
+           </div>
+        </div>
+    </div>
+    <!-- [E] search_wrap -->
+</div>
+<!-- [E] contents_wrap -->
+<script>
+    (function () {
+        'use strict';
+        
+        const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+        const $$ = (sel, ctx) => Array.from((ctx || document).querySelectorAll(sel));
+        
+        function on(parent, type, selector, handler) {
+            parent.addEventListener(type, function (e) {
+                const el = e.target.closest(selector);
+                if (!el || !parent.contains(el)) return;
+                handler(e, el);
+            });
+        }
+        
+        function getTabContainer(menu) {
+            return menu.closest('.list_answer_item') || menu.closest('.left_menu_wrap') || menu.parentElement || document;
+        }
+        
+        function getConWrap(menu, container) {
+            const next = menu.nextElementSibling;
+            if (next && next.classList && next.classList.contains('tab_con_wrap')) return next;
+            return $('.tab_con_wrap', container);
+        }
+        
+        function setTabActive(tabLink) {
+            const menu = tabLink.closest('.tab_menu');
+            if (!menu) return;
+            
+            const dataTab = tabLink.getAttribute('data-tab');
+            if (!dataTab) return;
+            
+            const container = getTabContainer(menu);
+            const conWrap = getConWrap(menu, container);
+            if (!conWrap) return;
+            
+            const targetCon = $('.tab_con.' + dataTab, conWrap);
+            if (!targetCon) return;
+            
+            $$('.tab_link', menu).forEach((a) => a.classList.remove('on'));
+            $$('.hidden', menu).forEach((n) => n.remove());
+            
+            tabLink.classList.add('on');
+            const hidden = document.createElement('span');
+            hidden.className = 'hidden';
+            hidden.textContent = '현재 선택됨';
+            const inn = tabLink.querySelector('.inn') || tabLink;
+            inn.appendChild(hidden);
+            
+            $$('.tab_con', conWrap).forEach((c) => c.classList.remove('on'));
+            targetCon.classList.add('on');
+        }
+        
+        function bindHorizontalDragScroll(wrap, body) {
+            let isDown = false;
+            let isDragging = false;
+            let startX = 0;
+            let scrollLeft = 0;
+            const dragThreshold = 6;
+            
+            wrap.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                isDown = true;
+                isDragging = false;
+                startX = e.pageX;
+                scrollLeft = wrap.scrollLeft;
+                wrap.classList.add('on');
+                body.classList.add('no_scroll');
+            });
+            
+            wrap.addEventListener('mousemove', function (e) {
+                if (!isDown) return;
+                
+                const diff = e.pageX - startX;
+                
+                if (Math.abs(diff) > dragThreshold) {
+                    isDragging = true;
+                }
+                
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                wrap.scrollLeft = scrollLeft - diff;
+            });
+            
+            function endDrag() {
+                isDown = false;
+                wrap.classList.remove('on');
+                body.classList.remove('no_scroll');
+            }
+            
+            wrap.addEventListener('mouseup', endDrag);
+            wrap.addEventListener('mouseleave', endDrag);
+            
+            wrap.addEventListener('click', function (e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                e.stopPropagation();
+                isDragging = false;
+            }, true);
+            
+            wrap.addEventListener('dragstart', function (e) {
+                e.preventDefault();
+            });
+            
+            let startTouchX = 0;
+            let startTouchScrollLeft = 0;
+            
+            wrap.addEventListener('touchstart', function (e) {
+                isDown = true;
+                isDragging = false;
+                startTouchX = e.touches[0].clientX;
+                startTouchScrollLeft = wrap.scrollLeft;
+            }, {passive: true});
+            
+            wrap.addEventListener('touchmove', function (e) {
+                if (!isDown) return;
+                
+                const diff = e.touches[0].clientX - startTouchX;
+                
+                if (Math.abs(diff) > dragThreshold) {
+                    isDragging = true;
+                }
+                
+                if (!isDragging) return;
+                
+                wrap.scrollLeft = startTouchScrollLeft - diff;
+            }, {passive: true});
+            
+            wrap.addEventListener('touchend', function () {
+                isDown = false;
+            });
+            
+            wrap._isDraggingHorizontally = function () {
+                return isDragging;
+            };
+        }
+        
+        function scrollToActiveMenuItem(menuContainer) {
+            const activeItem = $('.sc_menu_item.on', menuContainer);
+            if (!activeItem) return;
+            
+            const containerRect = menuContainer.getBoundingClientRect();
+            const itemRect = activeItem.getBoundingClientRect();
+            const offset = itemRect.left - containerRect.left + menuContainer.scrollLeft;
+            menuContainer.scrollLeft = offset;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            const body = document.body;
+            const chatInput = document.getElementById('chat_input');
+            const searchBtn = $('.search_btn');
+            const resultPanel = document.getElementById('chat_result_panel');
+            let sessionId = 'sess-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+            
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>"']/g, function (ch) {
+                    return ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    })[ch];
+                });
+            }
+            
+            function formatReply(value) {
+                return escapeHtml(value).replace(/\n/g, '<br>');
+            }
+            
+            function detectBranch(message) {
+                return /(예약|통합예약|회차|신청|취소|예약번호|프로그램)/.test(message) ? 'reservation' : 'palace_intro';
+            }
+            
+            function setLoading(isLoading) {
+                if (!searchBtn) return;
+                searchBtn.disabled = isLoading;
+                searchBtn.classList.toggle('loading', isLoading);
+            }
+            
+            function appendMessage(role, html) {
+                if (!resultPanel) return null;
+                resultPanel.classList.add('on');
+                const item = document.createElement('div');
+                item.className = 'chat_result_item ' + role;
+                item.innerHTML = html;
+                resultPanel.appendChild(item);
+                resultPanel.scrollTop = resultPanel.scrollHeight;
+                return item;
+            }
+            
+            function renderProgramList(items) {
+                if (!Array.isArray(items) || items.length === 0) return '';
+                const cards = items.slice(0, 8).map(function (item) {
+                    const id = item.res_idx || item.resIdx || '';
+                    const title = item.res_title || item.resTitle || item.vw_title || item.vwTitle || '예약 프로그램';
+                    return '<li class="reservation_card">' +
+                        '<div class="reservation_card_tit">' + escapeHtml(title) + '</div>' +
+                        '<div class="reservation_card_id">' + escapeHtml(id) + '</div>' +
+                    '</li>';
+                }).join('');
+                return '<ul class="reservation_card_list">' + cards + '</ul>';
+            }
+            
+            async function sendChat() {
+                if (!chatInput) return;
+                const message = chatInput.value.trim();
+                if (!message) return;
+                
+                appendMessage('user', '<div class="chat_bubble">' + escapeHtml(message) + '</div>');
+                chatInput.value = '';
+                const answerEl = appendMessage('assistant', '<div class="answer_txt">답변 생성 중...</div>');
+                setLoading(true);
+                
+                try {
+                    const response = await fetch('/api/v1/chatbot/chat/stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'text/event-stream'
+                        },
+                        body: JSON.stringify({
+                            session_id: sessionId,
+                            message: message,
+                            branch: detectBranch(message),
+                            history: []
+                        })
+                    });
+                    
+                    if (!response.ok || !response.body) {
+                        throw new Error('스트리밍 연결 실패 (' + response.status + ')');
+                    }
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+                    let reply = '';
+                    let finalPayload = null;
+                    
+                    while (true) {
+                        const chunk = await reader.read();
+                        if (chunk.done) break;
+                        buffer += decoder.decode(chunk.value, {stream: true});
+                        const events = buffer.split('\n\n');
+                        buffer = events.pop() || '';
+                        events.forEach(function (eventText) {
+                            const dataLine = eventText.split('\n').find(function (line) {
+                                return line.indexOf('data: ') === 0;
+                            });
+                            if (!dataLine) return;
+                            const data = JSON.parse(dataLine.slice(6));
+                            if (data.type === 'text' && data.delta) {
+                                reply += data.delta;
+                                answerEl.innerHTML = '<div class="answer_txt">' + formatReply(reply) + '</div>';
+                            }
+                            if (data.type === 'done' && data.payload) {
+                                finalPayload = data.payload;
+                            }
+                            if (data.type === 'error') {
+                                throw new Error(data.message || '처리 중 오류가 발생했습니다.');
+                            }
+                        });
+                    }
+                    
+                    if (finalPayload) {
+                        const finalReply = finalPayload.reply || reply || '응답을 받지 못했습니다.';
+                        const cards = finalPayload.panel ? renderProgramList(finalPayload.panel.items) : '';
+                        answerEl.innerHTML = '<div class="answer_txt">' + formatReply(finalReply) + '</div>' + cards;
+                    }
+                } catch (error) {
+                    answerEl.innerHTML = '<div class="answer_txt error">' + escapeHtml(error.message || '오류가 발생했습니다.') + '</div>';
+                } finally {
+                    setLoading(false);
+                    if (chatInput) chatInput.focus();
+                }
+            }
+            
+            if (searchBtn) {
+                searchBtn.addEventListener('click', sendChat);
+            }
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendChat();
+                    }
+                });
+            }
+            
+            on(document, 'click', '.tab_link', function (e, tabLink) {
+                e.preventDefault();
+                setTabActive(tabLink);
+            });
+            
+            on(document, 'click', '.trigger', function (e, trigger) {
+                e.preventDefault();
+                
+                const id = trigger.getAttribute('id');
+                if (!id) return;
+                
+                const wrap = document.getElementById(id + '_wrap');
+                const toggle = document.getElementById(id + '_toggle');
+                
+                if (wrap) wrap.classList.toggle('open');
+                if (toggle) toggle.classList.toggle('open');
+                trigger.classList.toggle('open');
+                
+                const hideTxt = trigger.querySelector('.hide_txt');
+                if (hideTxt) {
+                    const isOpen = wrap ? wrap.classList.contains('open') : trigger.classList.contains('open');
+                    hideTxt.innerHTML = isOpen ? '닫기' : '열기';
+                }
+            });
+            
+            on(document, 'click', '.trigger_close', function (e, btn) {
+                e.preventDefault();
+                
+                const targetId = btn.getAttribute('data-target');
+                if (!targetId) return;
+                
+                const target = document.getElementById(targetId);
+                if (target) target.click();
+            });
+            
+            /*on(document, 'click', '.left_menu_trigger', function (e, trigger) {
+                const targets = $$('.left_menu_wrap, .search_wrap');
+                targets.forEach((t) => t.classList.toggle('open'));
+                const isOpen = targets[0] ? targets[0].classList.contains('open') : false;
+                trigger.setAttribute('aria-label', isOpen ? '메뉴 닫힘' : '메뉴 열림');
+            });*/
+            
+            const tabs = $$('.sc_menu_wrap');
+            
+            tabs.forEach((tab, index) => {
+                tab.dataset.index = String(index + 1);
+            });
+            
+            tabs.forEach((tab) => {
+                const menuContainer = $('.sc_menu', tab);
+                if (!menuContainer) return;
+                bindHorizontalDragScroll(menuContainer, body);
+                setTimeout(function () {
+                    scrollToActiveMenuItem(menuContainer);
+                }, 100);
+            });
+            
+            $$('.sc_tab_btn_wrap').forEach((wrap) => {
+                bindHorizontalDragScroll(wrap, body);
+            });
+            
+            const tabButtons = $$('.tab_btn');
+            tabButtons.forEach((button) => {
+                button.addEventListener('click', function (e) {
+                    const dragWrap = button.closest('.sc_tab_btn_wrap');
+                    if (dragWrap && typeof dragWrap._isDraggingHorizontally === 'function' && dragWrap._isDraggingHorizontally()) {
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    const sel = button.getAttribute('data-target');
+                    const targetTab = sel ? document.querySelector(sel) : null;
+                    if (!targetTab) return;
+                    
+                    tabButtons.forEach((b) => b.classList.remove('on'));
+                    button.classList.add('on');
+                    
+                    tabs.forEach((tab) => tab.classList.remove('on'));
+                    targetTab.classList.add('on');
+                    
+                    const menuContainer = $('.sc_menu', targetTab);
+                    if (!menuContainer) return;
+                    
+                    scrollToActiveMenuItem(menuContainer);
+                });
+            });
+            
+            document.addEventListener('click', function (e) {
+                const item = e.target.closest('.sc_menu_item');
+                if (!item) return;
+                
+                const menu = item.closest('.sc_menu');
+                if (!menu) return;
+                
+                if (typeof menu._isDraggingHorizontally === 'function' && menu._isDraggingHorizontally()) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                e.preventDefault();
+                
+                menu.querySelectorAll('.sc_menu_item.on').forEach((el) => {
+                    el.classList.remove('on');
+                });
+                
+                item.classList.add('on');
+            });
+        });
+        
+        /* layer popup */
+        window.open_layer_pop = function (pop) {
+            setTimeout(function () {
+                const popEl = document.getElementById(pop);
+                if (!popEl) return;
+                
+                document.body.style.overflow = 'hidden';
+                const dim = popEl.closest('.dim');
+                if (dim) dim.style.display = 'block';
+            }, 50);
+        };
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            on(document, 'click', '.pop_close', function (e, btn) {
+                e.preventDefault();
+                document.body.style.overflow = 'visible';
+                const dim = btn.closest('.dim');
+                if (dim) dim.style.display = 'none';
+            });
+        });
+        
+
+    })();
+</script>
+
+</body>
+</html>

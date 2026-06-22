@@ -19,3 +19,12 @@ Thumbs.db
 
 # Downloaded model cache (HuggingFace) - do not commit (multi-GB)
 embedding/models/
+
+# Frontend dependencies & build output
+frontend/node_modules/
+frontend/dist/
+frontend/.nuxt/
+frontend/.output/
+
+# Gateway dependencies
+gateway/node_modules/

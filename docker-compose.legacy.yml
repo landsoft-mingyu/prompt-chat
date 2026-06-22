@@ -1,0 +1,89 @@
+services:
+  cubrid:
+    image: cubrid/cubrid:latest
+    container_name: prompt_chat_cubrid
+    hostname: cubrid
+    environment:
+      - CUBRID_DB=royal
+      - CUBRID_USER=royal
+      - CUBRID_PASSWORD=change-me
+    ports:
+      - "33000:33000"
+    volumes:
+      - cubrid_data:/var/lib/cubrid
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - prompt_chat_net
+    cap_add:
+      - SYS_ADMIN
+    ipc: host
+
+  gateway:
+    image: nginx:1.27
+    container_name: prompt_chat_gateway
+    ports:
+      - "3005:80"
+    volumes:
+      - /data/prompt_chat/gateway/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - /data/prompt_chat/gateway/html:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+    networks:
+      - prompt_chat_net
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    extra_hosts:
+      - "royal.landsoft.co.kr:121.131.51.108"
+
+  api:
+    image: landsoftdocker/prompt-chat-api:0.1.2
+    container_name: prompt_chat_api
+    ports:
+      - "8002:8000"
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    environment:
+      # 임베딩/벡터 서비스 (검색 시 사용)
+      - EMBEDDING_URL=http://embedding:8000
+      - MILVUS_URI=http://host.docker.internal:19530
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - prompt_chat_net
+    extra_hosts:
+      - "royal.landsoft.co.kr:121.131.51.108"
+
+  # BGE-M3 임베딩 서비스 (dense+sparse). 적재/검색 공통.
+  embedding:
+    build: ./embedding
+    image: prompt-chat-embedding:0.1.0
+    container_name: prompt_chat_embedding
+    ports:
+      - "18086:8000"
+    environment:
+      - BGE_MODEL=BAAI/bge-m3
+      - BGE_USE_FP16=1
+      - HF_HOME=/models
+    volumes:
+      # 모델 캐시 영속화 (재빌드/재기동 시 재다운로드 방지)
+      - ./embedding/models:/models
+    networks:
+      - prompt_chat_net
+    # GPU 사용 (nvidia container runtime 필요)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  prompt_chat_net:
+    driver: bridge
+
+volumes:
+  cubrid_data:

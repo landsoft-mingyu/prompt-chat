@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko">
+	<head>
+		<title>AI 궁능유적본부</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="imagetoolbar" content="no" />
+		<link href="https://fonts.googleapis.com/css?family=Montserrat|Noto+Sans+KR" rel="stylesheet">
+		<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+		<style type="text/css">
+         /* Reset CSS */
+         html{width:100%;height:100%;min-width:1400px;font-family:'Montserrat','Noto Sans KR', sans-serif;}
+         body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,form,fieldset,p,button{margin:0;padding:0}
+         body,h1,h2,h3,h4,input,button{font-size:12 px;color:javascript:;333;}
+         body{position:relative;height:100%;background-color:#fff;word-break:break-all;-ms-word-break:break-all;font-weight:300;}
+         img,fieldset,iframe{border:0 none}
+         li{list-style:none}
+         input,select,button{vertical-align:middle}
+         img{vertical-align:top}
+         i,em,address{font-style:normal}
+         label,button{cursor:pointer}
+         button{margin:0;padding:0}
+         button *{position:relative}
+         button img{left:-3px;*left:auto}
+         option{padding-right:6px}
+         hr, legend, .hide{position:absolute;left:-2000%;width:1px;height:1px;overflow:hidden;font-size:0;line-height:0;z-index:-1;}
+         a{text-decoration:none;color:#222;font-weight:600;font-size:14px;font-family:'Montserrat', sans-serif;}
+         .tit_box{width:100%;height:330px;background: #A57458;padding-top: 38px;box-sizing:border-box;}
+         .tit_box .txt_box{/* padding-top:105px; */text-align:center;font-size: 40px;color:#fff;}
+         .inner{width:1400px;margin:0 auto;position:relative;}
+         .list_box{width:1280px;margin:-150px auto 0;background:#fff;padding:40px 30px;}
+         .list_box .th{border-top:2px solid #444;border-bottom:1px solid #444;overflow:hidden;}
+         .list_box .th li{float:left;width:140px;box-sizing:border-box;border-right:1px solid #ddd;text-align:center;height:76px;line-height:76px;font-size:16px;color:#222;}
+         .list_box .th li:nth-child(1){width:100px;}
+		 .list_box .th li:nth-child(2){width:180px;}
+         .list_box .th li:nth-child(3){width:180px;}
+         .list_box .th li:nth-child(4){width:120px;}
+		 .list_box .th li:nth-child(5){width:370px;}
+         .list_box .th li:nth-child(6){width:180px;}
+         .list_box .th li:nth-child(7){width:150px;}
+         .list_box .th li:last-child{border-right:none;}
+
+         .list_box .tr{position:relative;padding-left:100px;border-bottom:2px solid #444;}
+         .list_box .tr dt{position:absolute;left:0px;top:50%;width:100px;text-align:center;height:30px;line-height:30px;margin-top:-15px;font-size:16px;color:#444;}
+         .list_box .tr dd{overflow:hidden;border-bottom:1px solid #ddd;border-left:1px solid #ddd;}
+         .list_box .tr dd:last-child{border-bottom:none;}
+         .list_box .tr li{float:left;width:100px;box-sizing:border-box;border-right:1px solid #ddd;text-align:center;height:60px;line-height:60px;font-size:14px;color:#444; display: flex; align-items: center; line-height: +1.3; justify-content: center}
+         .list_box .tr li:nth-child(1){width:180px;}
+         .list_box .tr li:nth-child(2){width:180px;}
+         .list_box .tr li:nth-child(3){width:120px;}
+		 .list_box .tr li:nth-child(4){width:370px;text-align:left; padding: 0 15px; justify-content: flex-start}
+         .list_box .tr li:nth-child(5){width:180px;}
+         .list_box .tr li:nth-child(6){width:150px;}
+         .list_box .tr li:last-child{border-right:none;}
+         
+         .list_box ul{ display: flex}
+         .list_box .tr li a{display:inline-block;position:relative;color:#aaa;}
+         .list_box .tr li a:first-child{margin-right:5px;}
+         .list_box .tr li a:last-child{margin-left:5px;}
+         .list_box .tr li a.on{color:#222;}/*
+         .list_box .tr li a .down{position:absolute;display:block;right:0px;top:50%;margin-top:-11px;width:20px;height:19px;background:url(asset/images/codinglist/codinglist_icon_down01.jpg) no-repeat 0 0;}
+         .list_box .tr li a.on .down{position:absolute;display:block;right:0px;top:50%;margin-top:-11px;width:20px;height:19px;background:url(asset/images/codinglist/codinglist_icon_down02.jpg) no-repeat 0 0;}
+         .list_box .tr li a .win{position:absolute;display:block;right:0px;top:50%;margin-top:-11px;width:20px;height:19px;background:url(asset/images/codinglist/codinglist_icon_window01.jpg) no-repeat 0 0;}
+         .list_box .tr li a.on .win{position:absolute;display:block;right:0px;top:50%;margin-top:-11px;width:20px;height:19px;background:url(asset/images/codinglist/codinglist_icon_window02.jpg) no-repeat 0 0;}
+
+         .list_box .tr li.dc{background:url(asset/images/codinglist/codinglist_dev_check.jpg) no-repeat center center;} */
+         .tit_line2{ line-height: +1.3; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%}
+      </style>
+	</head>
+	<body>
+		<div class="coding_wrap">
+			<!-- tit_box -->
+			<div class="tit_box">
+				<div class="inner">
+					<div class="txt_box">
+						<strong>AI 궁능유적본부 CODING LIST</strong>
+					</div>
+				</div>
+			</div>
+			<!-- tit_box -->
+			<!-- list_box -->
+			<div class="list_box">
+				<p style="font-size:20px;">[화면설계서]: </p>
+				<p style="margin-bottom:10px;font-size:20px;">[디자인자료]:
+                    <a href="https://www.figma.com/design/mxaQmFjaDtWd3OEGnSxe3B/%EA%B6%81%EB%8A%A5%EC%9C%A0%EC%A0%81%EB%B3%B8%EB%B6%80-%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80-%EB%82%B4-AI-%EC%B1%97%EB%B4%87-%EA%B5%AC%EC%B6%95?node-id=0-1&p=f&t=qdTTDqAXW7hB3hKD-0" target="_blank"  style="font-size:20px;">
+                        https://www.figma.com/design/mxaQmFjaDtWd3OEGnSxe3B/%EA%B6%81%EB%8A%A5%EC%9C%A0%EC%A0%81%EB%B3%B8%EB%B6%80-%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80-%EB%82%B4-AI-%EC%B1%97%EB%B4%87-%EA%B5%AC%EC%B6%95?node-id=0-1&p=f&t=qdTTDqAXW7hB3hKD-0
+                    </a>
+                </p>
+				<!-- th -->
+				<ul class="th">
+					<li>카테고리</li>
+					<li>1뎁스</li>
+					<li>2뎁스</li>
+					<li>화면</li>
+					<li>파일명</li>
+					<li>디자인</li>
+					<li>퍼블리싱</li>
+				</ul>
+				<!-- //th -->
+				<!-- tr 메인 -->
+				<dl class="tr">
+					<dt>레이아웃</dt>
+					<dd>
+						<ul>
+							<li>메인</li>
+							<li>-</li>
+							<li></li>
+							<li>page/ai_search_main.html</li>
+							<li>
+								<a href="page/ai_search_main.html" target="_blank">PC <i class="down"></i></a>
+								<a href="" target="_blank">M <i class="down"></i></a>
+							</li>
+							<li>
+								<a href="page/ai_search_main.html" target="_blank">Link <i class="win"></i></a>
+							</li>
+						</ul>
+					</dd>
+     
+				</dl>
+				<!-- //tr 메인 -->
+			</div>
+			<!-- //list_box -->
+		</div>
+		<script type="text/javascript">
+			$(document).ready(function(){
+				$("a").each(function(){
+					if($(this).attr("href") === "javascript:;" || $(this).attr("href") === "" ){
+						$(this).css("cursor" ,"default");
+						$(this).removeClass("on");
+					}else{
+						$(this).css("cursor" ,"pointer");
+						$(this).attr('target', '_blank');
+						$(this).addClass("on");
+					}
+				});
+			});
+		</script>
+	</body>
+</html>

@@ -48,6 +48,17 @@ class EmbedResponse(BaseModel):
     dim: int
 
 
+class RerankRequest(BaseModel):
+    query: str
+    texts: list[str]
+    max_query_length: int = 512
+    max_passage_length: int = 8192
+
+
+class RerankResponse(BaseModel):
+    scores: list[float]
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": _MODEL_NAME, "loaded": _model is not None}
@@ -69,3 +80,19 @@ def embed(req: EmbedRequest) -> EmbedResponse:
         for w in out["lexical_weights"]
     ]
     return EmbedResponse(dense=dense, sparse=sparse, dim=len(dense[0]) if dense else 0)
+
+
+@app.post("/rerank", response_model=RerankResponse)
+def rerank(req: RerankRequest) -> RerankResponse:
+    if not req.texts:
+        return RerankResponse(scores=[])
+    pairs = [[req.query, text] for text in req.texts]
+    scores_dict = _get_model().compute_score(
+        pairs,
+        max_query_length=req.max_query_length,
+        max_passage_length=req.max_passage_length,
+    )
+    # sparse+dense combined is more accurate than dense alone; fall back if missing
+    raw = scores_dict.get("sparse+dense", scores_dict.get("dense", []))
+    scores = [float(s) for s in raw]
+    return RerankResponse(scores=scores)

@@ -54,17 +54,39 @@ class Settings(BaseSettings):
         description="CORS 허용 origin 목록",
     )
 
-    # RAG (벡터 검색)
-    milvus_uri: str = Field(
-        default="http://localhost:19530",
-        description="Milvus 벡터 DB 연결 URI",
-    )
+    # RAG (벡터 검색 — Milvus)
+    milvus_host: str = Field(default="localhost", description="Milvus 호스트")
+    milvus_port: int = Field(default=19530, description="Milvus 포트")
+    milvus_collection: str = Field(default="chunks", description="Milvus 기본 컬렉션명")
+
+    # RAG (임베딩 서비스)
     embedding_url: str = Field(
         default="http://localhost:18086",
         description="임베딩 서비스 URL",
     )
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    # Redis
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis 연결 URL",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    def __init__(self, **values):
+        """명시 값으로 생성할 때는 로컬 .env가 테스트/오버라이드를 오염시키지 않게 한다."""
+        if values and "_env_file" not in values:
+            values["_env_file"] = None
+        super().__init__(**values)
+
+    @property
+    def milvus_uri(self) -> str:
+        """Milvus 연결 URI (milvus_host + milvus_port 조합)."""
+        return f"http://{self.milvus_host}:{self.milvus_port}"
 
     @property
     def database_url(self) -> str:

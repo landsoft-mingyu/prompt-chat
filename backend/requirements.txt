@@ -10,3 +10,5 @@ sqlalchemy-cubrid[pycubrid]
 httpx
 # 벡터 DB 클라이언트 (site_chunks 검색/적재)
 pymilvus
+# Redis 비동기 클라이언트 (세션 저장소)
+redis[asyncio]
